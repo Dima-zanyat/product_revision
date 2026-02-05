@@ -3,6 +3,7 @@ URL конфигурация проекта.
 """
 
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from revisions.viewsets import (
@@ -31,6 +32,11 @@ router.register(r'ingredients', IngredientViewSet, basename='ingredient')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path(
+        'api/health/',
+        lambda request: JsonResponse({'status': 'ok'}),
+        name='health_check'
+    ),
     path('api/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls')),
     path('api/auth/login/', login_view, name='login'),
@@ -42,5 +48,4 @@ urlpatterns = [
         upload_excel_products,
         name='upload_excel_products'
     ),
-
 ]
