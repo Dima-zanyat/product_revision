@@ -56,10 +56,10 @@ class ProductAdmin(admin.ModelAdmin):
         }),
     )
 
+    @admin.display(description='Ингредиентов в рецепте')
     def recipe_count(self, obj):
         """Показать количество ингредиентов в рецепте."""
         return obj.recipe_items.count()
-    recipe_count.short_description = 'Ингредиентов в рецепте'
 
 
 @admin.register(Recipe)
@@ -87,63 +87,7 @@ class RecipeAdmin(admin.ModelAdmin):
         }),
     )
 
+    @admin.display(description='Ингредиентов в рецепте')
     def recipe_count(self, obj):
+        """Показать количество ингредиентов в рецепте."""
         return obj.recipe_items.count()
-
-    recipe_count.short_description = 'Ингредиентов в рецепте'
-
-
-@admin.register(RecipeItem)
-class RecipeItemAdmin(admin.ModelAdmin):
-    """Admin для строк рецепта."""
-
-    list_display = ('product', 'ingredient', 'quantity', 'get_unit', 'created_at')
-    list_filter = ('product', 'ingredient__unit')
-    search_fields = ('product__title', 'ingredient__title')
-    readonly_fields = ('created_at',)
-
-    fieldsets = (
-        ('Информация', {
-            'fields': ('product', 'ingredient', 'quantity')
-        }),
-        ('Сроки', {
-            'fields': ('created_at',),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def get_unit(self, obj):
-        """Показать единицу измерения."""
-        return obj.ingredient.get_unit_display()
-
-    get_unit.short_description = 'Ед.изм.'
-
-
-@admin.register(Recipe)
-class RecipeAdmin(admin.ModelAdmin):
-    """
-    Отдельная вкладка "Рецепты": выбираешь продукт и добавляешь несколько ингредиентов.
-
-    Технически это тот же Product (proxy), но в админке отображается как "Рецепты".
-    """
-
-    list_display = ('id', 'title', 'recipe_count', 'created_at')
-    list_filter = ('created_at',)
-    search_fields = ('title', 'description')
-    readonly_fields = ('created_at',)
-    inlines = [RecipeItemInline]
-
-    fieldsets = (
-        ('Продукт', {
-            'fields': ('title', 'description')
-        }),
-        ('Сроки', {
-            'fields': ('created_at',),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def recipe_count(self, obj):
-        return obj.recipe_items.count()
-
-    recipe_count.short_description = 'Ингредиентов в рецепте'
