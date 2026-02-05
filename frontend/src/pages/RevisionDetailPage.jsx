@@ -359,9 +359,13 @@ export const RevisionDetailPage = () => {
 
   const isStaff = user?.role === 'staff';
   const isManagerial = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting';
+
+  // Права по статусам должны совпадать с backend:
+  // - staff: работает только с draft
+  // - admin/manager/accounting: могут редактировать и пересчитывать draft/processing/completed
   const canEditItems =
     (isStaff && currentRevision.status === 'draft') ||
-    (isManagerial && (currentRevision.status === 'processing' || currentRevision.status === 'completed'));
+    (isManagerial && ['draft', 'processing', 'completed'].includes(currentRevision.status));
 
   // Проверка доступа для сотрудника
   if (isStaff && currentRevision.status !== 'draft') {
@@ -389,7 +393,7 @@ export const RevisionDetailPage = () => {
               Отправить на обработку
             </Button>
           )}
-          {(user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting') && (
+          {isManagerial && (
             <>
               {(currentRevision.status === 'processing' || currentRevision.status === 'submitted') && (
                 <>
@@ -401,7 +405,7 @@ export const RevisionDetailPage = () => {
                   </Button>
                 </>
               )}
-              {(currentRevision.status === 'processing' || currentRevision.status === 'completed') && (
+              {['draft', 'processing', 'completed'].includes(currentRevision.status) && (
                 <Button variant="primary" onClick={handleCalculate}>
                   🔄 Пересчитать ревизию
                 </Button>
