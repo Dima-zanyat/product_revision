@@ -66,7 +66,7 @@ class RecipeItemAdmin(admin.ModelAdmin):
     list_display = ('product', 'ingredient', 'quantity', 'get_unit')
     list_filter = ('product', 'ingredient__unit')
     search_fields = ('product__title', 'ingredient__title')
-
+    inlines = [RecipeItemInline]
     fieldsets = (
         ('Информация', {
             'fields': ('product', 'ingredient', 'quantity')
