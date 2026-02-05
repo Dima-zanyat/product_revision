@@ -40,6 +40,7 @@ def login_view(request):
                     'id': user.id,
                     'username': user.username,
                     'email': getattr(user, 'email', ''),
+                    'role': getattr(user, 'role', None),
                 }
             })
         else:

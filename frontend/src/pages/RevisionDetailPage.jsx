@@ -357,8 +357,14 @@ export const RevisionDetailPage = () => {
     return <div>Ревизия не найдена</div>;
   }
 
+  const isStaff = user?.role === 'staff';
+  const isManagerial = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting';
+  const canEditItems =
+    (isStaff && currentRevision.status === 'draft') ||
+    (isManagerial && (currentRevision.status === 'processing' || currentRevision.status === 'completed'));
+
   // Проверка доступа для сотрудника
-  if (user?.role === 'staff' && currentRevision.status !== 'draft') {
+  if (isStaff && currentRevision.status !== 'draft') {
     return (
       <div>
         <Button onClick={() => navigate('/')}>← Назад к списку</Button>
@@ -439,26 +445,7 @@ export const RevisionDetailPage = () => {
               </Button>
             )}
           </div>
-          {user?.role === 'staff' && currentRevision.status === 'draft' && (
-            <ButtonGroup>
-              <label style={{ cursor: 'pointer' }}>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  style={{ display: 'none' }}
-                  onChange={(e) => handleExcelUpload(e, 'products')}
-                />
-                <Button variant="default" as="span">
-                  📤 Загрузить из Excel
-                </Button>
-              </label>
-              <Button variant="primary" onClick={() => setShowProductModal(true)}>
-                + Добавить продукт
-              </Button>
-            </ButtonGroup>
-          )}
-          {(user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting') && 
-           (currentRevision.status === 'processing' || currentRevision.status === 'completed') && (
+          {canEditItems && (
             <ButtonGroup>
               <label style={{ cursor: 'pointer' }}>
                 <input
@@ -485,7 +472,7 @@ export const RevisionDetailPage = () => {
                   <TableHeaderCell>Продукт</TableHeaderCell>
                   <TableHeaderCell>Количество (шт.)</TableHeaderCell>
                   <TableHeaderCell>Комментарии</TableHeaderCell>
-                  {currentRevision.status === 'draft' && (
+                  {canEditItems && (
                     <TableHeaderCell>Действия</TableHeaderCell>
                   )}
                 </tr>
@@ -499,9 +486,7 @@ export const RevisionDetailPage = () => {
                     <TableCell>{item.product_title}</TableCell>
                     <TableCell>{item.actual_quantity}</TableCell>
                     <TableCell>{item.comments || '-'}</TableCell>
-                    {((user?.role === 'staff' && currentRevision.status === 'draft') ||
-                      ((user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting') && 
-                       (currentRevision.status === 'processing' || currentRevision.status === 'completed'))) && (
+                    {canEditItems && (
                       <TableCell>
                         <ButtonGroup>
                           <Button 
@@ -544,13 +529,7 @@ export const RevisionDetailPage = () => {
               </Button>
             )}
           </div>
-          {user?.role === 'staff' && currentRevision.status === 'draft' && (
-            <Button variant="primary" onClick={() => setShowIngredientModal(true)}>
-              + Добавить ингредиент
-            </Button>
-          )}
-          {(user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting') && 
-           (currentRevision.status === 'processing' || currentRevision.status === 'completed') && (
+          {canEditItems && (
             <Button variant="primary" onClick={() => setShowIngredientModal(true)}>
               + Добавить ингредиент
             </Button>
@@ -565,7 +544,7 @@ export const RevisionDetailPage = () => {
                   <TableHeaderCell>Количество</TableHeaderCell>
                   <TableHeaderCell>Ед. изм.</TableHeaderCell>
                   <TableHeaderCell>Комментарии</TableHeaderCell>
-                  {currentRevision.status === 'draft' && (
+                  {canEditItems && (
                     <TableHeaderCell>Действия</TableHeaderCell>
                   )}
                 </tr>
@@ -580,9 +559,7 @@ export const RevisionDetailPage = () => {
                     <TableCell>{item.actual_quantity}</TableCell>
                     <TableCell>{item.unit_display}</TableCell>
                     <TableCell>{item.comments || '-'}</TableCell>
-                    {((user?.role === 'staff' && currentRevision.status === 'draft') ||
-                      ((user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting') && 
-                       (currentRevision.status === 'processing' || currentRevision.status === 'completed'))) && (
+                    {canEditItems && (
                       <TableCell>
                         <ButtonGroup>
                           <Button 
