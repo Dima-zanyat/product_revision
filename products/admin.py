@@ -6,6 +6,15 @@ from django.contrib import admin
 from .models import Ingredient, Product, RecipeItem
 
 
+class RecipeItemInline(admin.TabularInline):
+    """Inline для элементов рецепта продукта."""
+
+    model = RecipeItem
+    extra = 1
+    fields = ('ingredient', 'quantity')
+    autocomplete_fields = ('ingredient',)
+
+
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     """Admin для ингредиентов."""
@@ -34,6 +43,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     search_fields = ('title', 'description')
     readonly_fields = ('created_at',)
+    inlines = [RecipeItemInline]
 
     fieldsets = (
         ('Информация', {
@@ -51,14 +61,6 @@ class ProductAdmin(admin.ModelAdmin):
     recipe_count.short_description = 'Ингредиентов в рецепте'
 
 
-class RecipeItemInline(admin.TabularInline):
-    """Inline для элементов рецепта."""
-
-    model = RecipeItem
-    extra = 1
-    fields = ('ingredient', 'quantity')
-
-
 @admin.register(RecipeItem)
 class RecipeItemAdmin(admin.ModelAdmin):
     """Admin для рецептов."""
@@ -66,7 +68,6 @@ class RecipeItemAdmin(admin.ModelAdmin):
     list_display = ('product', 'ingredient', 'quantity', 'get_unit')
     list_filter = ('product', 'ingredient__unit')
     search_fields = ('product__title', 'ingredient__title')
-    inlines = [RecipeItemInline]
     fieldsets = (
         ('Информация', {
             'fields': ('product', 'ingredient', 'quantity')
