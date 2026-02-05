@@ -276,7 +276,7 @@ class RevisionCalculator:
         """
         total_expense = Decimal('0.000')
 
-        # Получить все рецепты, содержащие этот ингредиент
+        # Получить все строки рецептов, содержащие этот ингредиент
         recipes = RecipeItem.objects.filter(ingredient=ingredient)
 
         for recipe in recipes:
