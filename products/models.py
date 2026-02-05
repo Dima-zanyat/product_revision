@@ -107,3 +107,12 @@ class RecipeItem(models.Model):
 
     def __str__(self):
         return f"{self.product.title} - {self.ingredient.title} ({self.quantity}{self.ingredient.unit})"
+
+
+class Recipe(Product):
+    """Прокси-модель для удобного редактирования рецептов в админке."""
+
+    class Meta:
+        proxy = True
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
