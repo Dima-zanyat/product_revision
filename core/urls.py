@@ -37,5 +37,10 @@ urlpatterns = [
     path('api/auth/logout/', logout_view, name='logout'),
     path('api/auth/me/', current_user, name='current_user'),
     path('api/auth/csrf/', csrf_token, name='csrf_token'),
-    path('api/revision-product-items/upload-excel/', upload_excel_products, name='upload_excel_products'),
+    path(
+        'api/revision-product-items/upload-excel/',
+        upload_excel_products,
+        name='upload_excel_products'
+    ),
+
 ]
