@@ -140,7 +140,7 @@ GET    /api/revision-reports/
 - Собственный логотип и favicon
 
 ---
-gt## 🐳 Docker / Production
+## 🐳 Docker / Production
 
 ### Запуск через Docker Compose
 
@@ -156,6 +156,22 @@ docker compose exec backend python manage.py createsuperuser
 
 # Собрать статику для frontend
 docker compose exec backend python manage.py collectstatic --noinput
+```
+
+## ☁️ Deploy на Render (product-revision.onrender.com)
+
+Проект подготовлен для деплоя как **один web‑сервис** (Django + собранный React) в Docker (см. `Dockerfile`).
+
+**Переменные окружения (Render → Environment):**
+- `DATABASE_URL` — строка подключения к PostgreSQL (Render Postgres)
+- `SECRET_KEY` — секретный ключ Django
+- `ENVIRONMENT=production`
+- `USE_HTTPS=true`
+
+**Healthcheck:**
+- `GET /api/health/` → `{ "status": "ok" }`
+
+SPA отдаётся на всех путях кроме `admin/` и `api/`.
 
 
 ## 🧪 Статус проекта
@@ -250,5 +266,4 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-
 

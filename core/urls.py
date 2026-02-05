@@ -4,7 +4,7 @@ URL конфигурация проекта.
 
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from revisions.viewsets import (
     RevisionViewSet,
@@ -16,6 +16,7 @@ from sales.viewsets import LocationViewSet
 from products.viewsets import ProductViewSet, IngredientViewSet
 from users.views import login_view, logout_view, current_user, csrf_token
 from revisions.views import upload_excel_products
+from core.views import spa
 
 # Создать router для API
 router = DefaultRouter()
@@ -48,4 +49,6 @@ urlpatterns = [
         upload_excel_products,
         name='upload_excel_products'
     ),
+    # React SPA entrypoint (must be last)
+    re_path(r'^(?!api/|admin/).*$', spa),
 ]

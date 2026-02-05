@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: product-revision
+    env: docker
+    healthCheckPath: /api/health/
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: USE_HTTPS
+        value: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 2
+      # Set DATABASE_URL in the Render dashboard (PostgreSQL)
+
