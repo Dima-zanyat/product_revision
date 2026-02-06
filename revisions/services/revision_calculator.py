@@ -15,8 +15,8 @@ from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from datetime import datetime, timedelta
 from django.db.models import Sum
 from products.models import Ingredient, RecipeItem
-from sales.models import Sales, Incoming, IngredientInventory
-from revisions.models import Revision, RevisionIngredientItem, RevisionReport
+from sales.models import Incoming, IngredientInventory
+from revisions.models import Revision, RevisionIngredientItem, RevisionProductItem, RevisionReport
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class RevisionCalculator:
             logger.info(
                 f"Предыдущая ревизия: {previous_revision.id if previous_revision else 'нет (первая ревизия)'}")
 
-            # Получить все продажи за период
+            # Получить количество проданных изделий (заполняется вручную в ревизии)
             sales_data = self._get_sales_data(previous_revision)
             logger.info(f"Получено {len(sales_data)} позиций продаж")
 
@@ -110,7 +110,11 @@ class RevisionCalculator:
 
     def _get_sales_data(self, previous_revision: Revision) -> dict:
         """
-        Получить все продажи за период между ревизиями.
+        Получить "продажи" (кол-во изделий) для расчета расхода ингредиентов.
+
+        В текущей версии проекта продажи загружаются вручную: в ревизии заполняются
+        продукты и их количество (сколько изделий продано/произведено за период).
+        Поэтому источником данных считаем `RevisionProductItem` текущей ревизии.
 
         Args:
             previous_revision: Предыдущая ревизия (или None)
@@ -118,27 +122,16 @@ class RevisionCalculator:
         Returns:
             dict вида {product_id: quantity}
         """
-        # Определить начальную дату периода
-        if previous_revision:
-            start_date = previous_revision.revision_date + timedelta(days=1)
-        else:
-            # Если это первая ревизия, берем с начала месяца
-            start_date = datetime(self.revision_date.year,
-                                  self.revision_date.month, 1).date()
-
-        logger.debug(
-            f"Получение продаж за период: {start_date} - {self.revision_date}")
-
-        # Получить все продажи за период
-        sales = Sales.objects.filter(
-            location=self.location,
-            date__gte=start_date,
-            date__lte=self.revision_date
-        ).values('product_id').annotate(total_quantity=Sum('quantity'))
-
         # Преобразовать в dict, обрабатывая None значения
         sales_data = {}
-        for item in sales:
+        revision_products = (
+            RevisionProductItem.objects
+            .filter(revision=self.revision)
+            .values('product_id')
+            .annotate(total_quantity=Sum('actual_quantity'))
+        )
+
+        for item in revision_products:
             product_id = item['product_id']
             quantity = item['total_quantity']
             if quantity is not None:
@@ -147,6 +140,12 @@ class RevisionCalculator:
                 except (ValueError, TypeError):
                     logger.warning(f"Некорректное количество для продукта {product_id}: {quantity}")
                     sales_data[product_id] = 0
+
+        if not sales_data:
+            logger.warning(
+                f"В ревизии {self.revision.id} нет продуктов для расчета расхода. "
+                f"Расход ингредиентов будет 0."
+            )
 
         return sales_data
 
