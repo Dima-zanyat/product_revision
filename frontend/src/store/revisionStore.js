@@ -63,6 +63,26 @@ export const useRevisionStore = create((set, get) => ({
     }
   },
 
+  // Удалить ревизию
+  deleteRevision: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      await revisionsAPI.delete(id);
+      set(state => ({
+        revisions: state.revisions.filter(r => String(r.id) !== String(id)),
+        currentRevision: state.currentRevision && String(state.currentRevision.id) === String(id)
+          ? null
+          : state.currentRevision,
+      }));
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.response?.data?.detail || error.message;
+      set({ error: errorMessage });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   // Расчитать ревизию
   calculateRevision: async (id) => {
     set({ loading: true, error: null });

@@ -111,7 +111,7 @@ const Difference = styled.span`
 export const RevisionDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentRevision, loading, fetchRevision, calculateRevision, submitRevision, approveRevision, rejectRevision } = useRevisionStore();
+  const { currentRevision, loading, fetchRevision, calculateRevision, submitRevision, approveRevision, rejectRevision, deleteRevision } = useRevisionStore();
   const { user } = useAuthStore();
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -199,6 +199,19 @@ export const RevisionDetailPage = () => {
       } catch (error) {
         alert('Ошибка при отклонении ревизии: ' + (error.response?.data?.error || error.message));
       }
+    }
+  };
+
+  const handleDeleteRevision = async () => {
+    if (!window.confirm('Удалить ревизию? Это действие нельзя отменить.')) {
+      return;
+    }
+    try {
+      await deleteRevision(id);
+      alert('Ревизия удалена');
+      navigate('/');
+    } catch (error) {
+      alert('Ошибка при удалении ревизии: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -420,6 +433,9 @@ export const RevisionDetailPage = () => {
                   {calculateButtonText}
                 </Button>
               )}
+              <Button variant="danger" onClick={handleDeleteRevision}>
+                🗑️ Удалить
+              </Button>
             </>
           )}
         </ButtonGroup>

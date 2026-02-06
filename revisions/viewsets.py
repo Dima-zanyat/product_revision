@@ -85,6 +85,16 @@ class RevisionViewSet(viewsets.ModelViewSet):
         """Установить текущего пользователя как автора."""
         serializer.save(author=self.request.user)
 
+    def destroy(self, request, *args, **kwargs):
+        """Удалить ревизию (запрещено для staff)."""
+        user = request.user
+        if hasattr(user, 'role') and user.role == 'staff':
+            return Response(
+                {'error': 'Недостаточно прав для удаления ревизии'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=True, methods=['post'])
     def calculate(self, request, pk=None):
         """
