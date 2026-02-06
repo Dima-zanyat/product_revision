@@ -230,9 +230,9 @@ class RevisionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        if revision.status not in ['processing', 'submitted']:
+        if revision.status not in ['draft', 'processing', 'submitted']:
             return Response(
-                {'error': 'Можно подтвердить только ревизию в статусе "В обработке" или "Отправлена на обработку"'},
+                {'error': 'Можно подтвердить только ревизию в статусе "Черновик", "В обработке" или "Отправлена на обработку"'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

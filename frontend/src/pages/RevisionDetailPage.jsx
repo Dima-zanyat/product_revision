@@ -403,14 +403,16 @@ export const RevisionDetailPage = () => {
           )}
           {isManagerial && (
             <>
-              {(currentRevision.status === 'processing' || currentRevision.status === 'submitted') && (
+              {(currentRevision.status === 'draft' || currentRevision.status === 'processing' || currentRevision.status === 'submitted') && (
                 <>
                   <Button variant="success" onClick={handleApprove}>
                     ✅ Подтвердить
                   </Button>
-                  <Button variant="danger" onClick={() => setShowRejectModal(true)}>
-                    ❌ Отклонить
-                  </Button>
+                  {(currentRevision.status === 'processing' || currentRevision.status === 'submitted') && (
+                    <Button variant="danger" onClick={() => setShowRejectModal(true)}>
+                      ❌ Отклонить
+                    </Button>
+                  )}
                 </>
               )}
               {['draft', 'processing', 'completed'].includes(currentRevision.status) && (
@@ -596,8 +598,8 @@ export const RevisionDetailPage = () => {
         )}
       </Section>
 
-      {(user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting') && 
-       (currentRevision.status === 'processing' || currentRevision.status === 'completed') && (
+      {isManagerial &&
+       ['draft', 'processing', 'completed'].includes(currentRevision.status) && (
         <Section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
             <SectionTitle>Отчет по ревизии</SectionTitle>

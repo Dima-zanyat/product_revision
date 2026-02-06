@@ -15,6 +15,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 ENVIRONMENT = config('ENVIRONMENT', default='development')
 IS_PRODUCTION = ENVIRONMENT.lower() in ('prod', 'production')
 SECRET_KEY = config('SECRET_KEY', default='unsafe-development-key' if not IS_PRODUCTION else None)
+if IS_PRODUCTION and not SECRET_KEY:
+    raise RuntimeError('Missing required env var SECRET_KEY for production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=(not IS_PRODUCTION), cast=bool)
