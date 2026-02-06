@@ -43,6 +43,13 @@ export const useAuthStore = create((set, get) => ({
         loading: false,
         error: null
       });
+
+      // Нормализуем состояние (и гарантируем наличие role) через /auth/me/
+      try {
+        await get().checkAuth();
+      } catch (_) {
+        // ignore
+      }
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 

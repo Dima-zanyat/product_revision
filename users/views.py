@@ -41,6 +41,8 @@ def login_view(request):
                     'username': user.username,
                     'email': getattr(user, 'email', ''),
                     'role': getattr(user, 'role', None),
+                    'is_staff': bool(getattr(user, 'is_staff', False)),
+                    'is_superuser': bool(getattr(user, 'is_superuser', False)),
                 }
             })
         else:
@@ -81,6 +83,8 @@ def current_user(request):
         'username': user.username,
         'email': getattr(user, 'email', ''),
         'role': getattr(user, 'role', None),
+        'is_staff': bool(getattr(user, 'is_staff', False)),
+        'is_superuser': bool(getattr(user, 'is_superuser', False)),
     })
 
 

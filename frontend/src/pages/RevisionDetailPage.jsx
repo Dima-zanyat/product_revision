@@ -358,7 +358,12 @@ export const RevisionDetailPage = () => {
   }
 
   const isStaff = user?.role === 'staff';
-  const isManagerial = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'accounting';
+  const isPrivileged = Boolean(user?.is_superuser || user?.is_staff);
+  const isManagerial =
+    isPrivileged ||
+    user?.role === 'admin' ||
+    user?.role === 'manager' ||
+    user?.role === 'accounting';
 
   // Права по статусам должны совпадать с backend:
   // - staff: работает только с draft
@@ -366,6 +371,9 @@ export const RevisionDetailPage = () => {
   const canEditItems =
     (isStaff && currentRevision.status === 'draft') ||
     (isManagerial && ['draft', 'processing', 'completed'].includes(currentRevision.status));
+
+  const hasReports = (currentRevision.reports?.length || 0) > 0;
+  const calculateButtonText = hasReports ? '🔄 Пересчитать ревизию' : '🧮 Рассчитать ревизию';
 
   // Проверка доступа для сотрудника
   if (isStaff && currentRevision.status !== 'draft') {
@@ -407,15 +415,10 @@ export const RevisionDetailPage = () => {
               )}
               {['draft', 'processing', 'completed'].includes(currentRevision.status) && (
                 <Button variant="primary" onClick={handleCalculate}>
-                  🔄 Пересчитать ревизию
+                  {calculateButtonText}
                 </Button>
               )}
             </>
-          )}
-          {user?.role === 'staff' && currentRevision.status === 'draft' && (
-            <Button variant="default" onClick={handleCalculate}>
-              Рассчитать ревизию
-            </Button>
           )}
         </ButtonGroup>
       </PageHeader>
