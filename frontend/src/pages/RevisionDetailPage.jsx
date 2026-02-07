@@ -398,7 +398,7 @@ export const RevisionDetailPage = () => {
 
   const handleExportToExcel = (reports) => {
     // Создаем CSV файл (можно улучшить до настоящего Excel с библиотекой xlsx)
-    const headers = ['Ингредиент', 'Ожидаемый остаток', 'Фактический остаток', 'Разница', '% отклонения', 'Статус'];
+    const headers = ['Позиция номенкулатуры', 'Ожидаемый остаток', 'Фактический остаток', 'Разница', '% отклонения', 'Статус'];
     const rows = reports
       .sort((a, b) => {
         const statusOrder = { 'critical': 0, 'warning': 1, 'ok': 2 };
@@ -637,7 +637,7 @@ export const RevisionDetailPage = () => {
       <Section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
-            <SectionTitle>Ингредиенты ({currentRevision.ingredient_items?.length || 0})</SectionTitle>
+            <SectionTitle>Номенкулатура ({currentRevision.ingredient_items?.length || 0})</SectionTitle>
             {currentRevision.ingredient_items && currentRevision.ingredient_items.length > 5 && (
               <Button 
                 variant="default"
@@ -658,7 +658,7 @@ export const RevisionDetailPage = () => {
             <Table>
               <TableHeader>
                 <tr>
-                  <TableHeaderCell>Ингредиент</TableHeaderCell>
+                  <TableHeaderCell>Позиция номенкулатуры</TableHeaderCell>
                   <TableHeaderCell>Количество</TableHeaderCell>
                   <TableHeaderCell>Ед. изм.</TableHeaderCell>
                   <TableHeaderCell>Комментарии</TableHeaderCell>
@@ -703,7 +703,7 @@ export const RevisionDetailPage = () => {
             </Table>
           </TableContainer>
         ) : (
-          <p style={{ color: theme.colors.textLight }}>Ингредиенты не добавлены</p>
+          <p style={{ color: theme.colors.textLight }}>Номенкулатура не добавлена</p>
         )}
       </Section>
 
@@ -720,7 +720,7 @@ export const RevisionDetailPage = () => {
               <Table>
                 <TableHeader>
                   <tr>
-                    <TableHeaderCell>Ингредиент</TableHeaderCell>
+                    <TableHeaderCell>Позиция номенкулатуры</TableHeaderCell>
                     <TableHeaderCell>Количество</TableHeaderCell>
                     <TableHeaderCell>Ед. изм.</TableHeaderCell>
                     <TableHeaderCell>Дата</TableHeaderCell>
@@ -804,7 +804,7 @@ export const RevisionDetailPage = () => {
               <Table>
                 <TableHeader>
                   <tr>
-                    <TableHeaderCell>Ингредиент</TableHeaderCell>
+                    <TableHeaderCell>Позиция номенкулатуры</TableHeaderCell>
                     <TableHeaderCell>Ожидаемый остаток</TableHeaderCell>
                     <TableHeaderCell>Фактический остаток</TableHeaderCell>
                     <TableHeaderCell>Разница</TableHeaderCell>
@@ -933,7 +933,7 @@ export const RevisionDetailPage = () => {
       >
         <form onSubmit={handleAddIngredient}>
           <FormGroup>
-            <Label>Ингредиент</Label>
+            <Label>Позиция номенкулатуры</Label>
             <Input
               list="ingredient-options"
               value={ingredientSearch || ingredientTitleById(formData.ingredient)}
@@ -1000,7 +1000,7 @@ export const RevisionDetailPage = () => {
       >
         <form onSubmit={handleAddIncoming}>
           <FormGroup>
-            <Label>Ингредиент</Label>
+            <Label>Позиция номенкулатуры</Label>
             <Input
               list="incoming-ingredient-options"
               value={incomingIngredientSearch || ingredientTitleById(incomingFormData.ingredient)}

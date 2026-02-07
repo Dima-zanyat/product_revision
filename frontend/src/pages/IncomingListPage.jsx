@@ -171,7 +171,7 @@ export const IncomingListPage = () => {
               <Table>
                 <TableHeader>
                   <tr>
-                    <TableHeaderCell>Ингредиент</TableHeaderCell>
+                    <TableHeaderCell>Позиция номенкулатуры</TableHeaderCell>
                     <TableHeaderCell>Количество</TableHeaderCell>
                     <TableHeaderCell>Ед. изм.</TableHeaderCell>
                     <TableHeaderCell>Точка</TableHeaderCell>
@@ -243,7 +243,7 @@ export const IncomingListPage = () => {
       >
         <form onSubmit={handleSave}>
           <FormGroup>
-            <Label>Ингредиент</Label>
+            <Label>Позиция номенкулатуры</Label>
             <Select
               value={formData.ingredient || ''}
               onChange={(e) => setFormData({ ...formData, ingredient: e.target.value })}
