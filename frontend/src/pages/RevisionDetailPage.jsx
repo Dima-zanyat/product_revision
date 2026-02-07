@@ -15,7 +15,7 @@ import { Modal } from '../components/Modal';
 import { Input, Select, Label, FormGroup, Textarea } from '../components/Input';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { revisionItemsAPI, referenceAPI } from '../services/api';
+import { revisionItemsAPI, referenceAPI, incomingAPI } from '../services/api';
 
 const PageHeader = styled.div`
   display: flex;
@@ -117,11 +117,15 @@ export const RevisionDetailPage = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [showProductModal, setShowProductModal] = useState(false);
   const [showIngredientModal, setShowIngredientModal] = useState(false);
+  const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editingIngredient, setEditingIngredient] = useState(null);
+  const [editingIncoming, setEditingIncoming] = useState(null);
   const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [formData, setFormData] = useState({});
+  const [incomingFormData, setIncomingFormData] = useState({});
+  const [incomingItems, setIncomingItems] = useState([]);
   const [showProducts, setShowProducts] = useState(false);
   const [showIngredients, setShowIngredients] = useState(false);
   const [reportFilter, setReportFilter] = useState('');
@@ -133,6 +137,13 @@ export const RevisionDetailPage = () => {
     }
   }, [id, fetchRevision]);
 
+  useEffect(() => {
+    if (currentRevision?.id) {
+      loadIncoming();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentRevision?.id, currentRevision?.revision_date, currentRevision?.location]);
+
   const loadReferenceData = async () => {
     try {
       const [productsRes, ingredientsRes] = await Promise.all([
@@ -143,6 +154,18 @@ export const RevisionDetailPage = () => {
       setIngredients(ingredientsRes.data?.results || ingredientsRes.data || []);
     } catch (error) {
       console.error('Ошибка загрузки справочников:', error);
+    }
+  };
+
+  const loadIncoming = async () => {
+    try {
+      const response = await incomingAPI.getAll({
+        location: currentRevision.location,
+        date: currentRevision.revision_date,
+      });
+      setIncomingItems(response.data?.results || response.data || []);
+    } catch (error) {
+      console.error('Ошибка загрузки поступлений:', error);
     }
   };
 
@@ -299,6 +322,53 @@ export const RevisionDetailPage = () => {
         fetchRevision(id);
       } catch (error) {
         alert('Ошибка при удалении ингредиента: ' + (error.response?.data?.detail || error.message));
+      }
+    }
+  };
+
+  const handleAddIncoming = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ingredient: incomingFormData.ingredient,
+        quantity: incomingFormData.quantity,
+        comment: incomingFormData.comment || '',
+        location: currentRevision.location,
+        date: incomingFormData.date || currentRevision.revision_date,
+      };
+
+      if (editingIncoming) {
+        await incomingAPI.update(editingIncoming.id, payload);
+      } else {
+        await incomingAPI.create(payload);
+      }
+      setShowIncomingModal(false);
+      setIncomingFormData({});
+      setEditingIncoming(null);
+      loadIncoming();
+    } catch (error) {
+      alert('Ошибка при сохранении поступления: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const handleEditIncoming = (item) => {
+    setEditingIncoming(item);
+    setIncomingFormData({
+      ingredient: item.ingredient,
+      quantity: item.quantity,
+      comment: item.comment || '',
+      date: item.date,
+    });
+    setShowIncomingModal(true);
+  };
+
+  const handleDeleteIncoming = async (itemId) => {
+    if (window.confirm('Удалить поступление?')) {
+      try {
+        await incomingAPI.delete(itemId);
+        loadIncoming();
+      } catch (error) {
+        alert('Ошибка при удалении поступления: ' + (error.response?.data?.detail || error.message));
       }
     }
   };
@@ -614,6 +684,70 @@ export const RevisionDetailPage = () => {
         )}
       </Section>
 
+      {isManagerial && (
+        <Section>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
+            <SectionTitle>Поступления</SectionTitle>
+            {canEditItems && (
+              <Button variant="primary" onClick={() => setShowIncomingModal(true)}>
+                + Добавить поступление
+              </Button>
+            )}
+          </div>
+          {incomingItems && incomingItems.length > 0 ? (
+            <TableContainer>
+              <Table>
+                <TableHeader>
+                  <tr>
+                    <TableHeaderCell>Ингредиент</TableHeaderCell>
+                    <TableHeaderCell>Количество</TableHeaderCell>
+                    <TableHeaderCell>Ед. изм.</TableHeaderCell>
+                    <TableHeaderCell>Дата</TableHeaderCell>
+                    <TableHeaderCell>Комментарии</TableHeaderCell>
+                    {canEditItems && (
+                      <TableHeaderCell>Действия</TableHeaderCell>
+                    )}
+                  </tr>
+                </TableHeader>
+                <TableBody>
+                  {incomingItems.map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.ingredient_title}</TableCell>
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell>{item.unit_display}</TableCell>
+                      <TableCell>{item.date}</TableCell>
+                      <TableCell>{item.comment || '-'}</TableCell>
+                      {canEditItems && (
+                        <TableCell>
+                          <ButtonGroup>
+                            <Button
+                              variant="default"
+                              onClick={() => handleEditIncoming(item)}
+                              style={{ padding: `${theme.spacing.xs} ${theme.spacing.sm}`, fontSize: '12px' }}
+                            >
+                              ✏️
+                            </Button>
+                            <Button
+                              variant="danger"
+                              onClick={() => handleDeleteIncoming(item.id)}
+                              style={{ padding: `${theme.spacing.xs} ${theme.spacing.sm}`, fontSize: '12px' }}
+                            >
+                              🗑️
+                            </Button>
+                          </ButtonGroup>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <p style={{ color: theme.colors.textLight }}>Поступления не добавлены</p>
+          )}
+        </Section>
+      )}
+
       {isManagerial &&
        ['draft', 'processing', 'completed'].includes(currentRevision.status) && (
         <Section>
@@ -808,6 +942,73 @@ export const RevisionDetailPage = () => {
             <Textarea
               value={formData.comments || ''}
               onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
+            />
+          </FormGroup>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={showIncomingModal}
+        onClose={() => {
+          setShowIncomingModal(false);
+          setIncomingFormData({});
+          setEditingIncoming(null);
+        }}
+        title={editingIncoming ? "Редактировать поступление" : "Добавить поступление"}
+        footer={
+          <>
+            <Button onClick={() => {
+              setShowIncomingModal(false);
+              setIncomingFormData({});
+              setEditingIncoming(null);
+            }}>
+              Отмена
+            </Button>
+            <Button variant="primary" onClick={handleAddIncoming}>
+              {editingIncoming ? 'Сохранить' : 'Добавить'}
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleAddIncoming}>
+          <FormGroup>
+            <Label>Ингредиент</Label>
+            <Select
+              value={incomingFormData.ingredient || ''}
+              onChange={(e) => setIncomingFormData({ ...incomingFormData, ingredient: e.target.value })}
+              required
+            >
+              <option value="">Выберите ингредиент</option>
+              {ingredients.map(i => (
+                <option key={i.id} value={i.id}>{i.title}</option>
+              ))}
+            </Select>
+          </FormGroup>
+          <FormGroup>
+            <Label>Количество</Label>
+            <Input
+              type="number"
+              step="0.001"
+              min="0"
+              value={incomingFormData.quantity || ''}
+              onChange={(e) => setIncomingFormData({ ...incomingFormData, quantity: parseFloat(e.target.value) })}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Дата</Label>
+            <Input
+              type="date"
+              value={incomingFormData.date || currentRevision.revision_date}
+              onChange={(e) => setIncomingFormData({ ...incomingFormData, date: e.target.value })}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Комментарии</Label>
+            <Textarea
+              value={incomingFormData.comment || ''}
+              onChange={(e) => setIncomingFormData({ ...incomingFormData, comment: e.target.value })}
             />
           </FormGroup>
         </form>

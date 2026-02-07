@@ -12,7 +12,7 @@ from revisions.viewsets import (
     RevisionIngredientItemViewSet,
     RevisionReportViewSet,
 )
-from sales.viewsets import LocationViewSet
+from sales.viewsets import LocationViewSet, IncomingViewSet
 from products.viewsets import ProductViewSet, IngredientViewSet
 from users.views import login_view, logout_view, current_user, csrf_token
 from revisions.views import upload_excel_products
@@ -28,6 +28,7 @@ router.register(r'revision-ingredient-items',
 router.register(r'revision-reports', RevisionReportViewSet,
                 basename='revision-report')
 router.register(r'locations', LocationViewSet, basename='location')
+router.register(r'incoming', IncomingViewSet, basename='incoming')
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'ingredients', IngredientViewSet, basename='ingredient')
 

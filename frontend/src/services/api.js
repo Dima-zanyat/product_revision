@@ -98,6 +98,15 @@ export const referenceAPI = {
   getIngredients: (params) => api.get('/ingredients/', { params }).catch(() => ({ data: [] })),
 };
 
+// Incoming (поступления) API
+export const incomingAPI = {
+  getAll: (params) => api.get('/incoming/', { params }),
+  getById: (id) => api.get(`/incoming/${id}/`),
+  create: (data) => api.post('/incoming/', data),
+  update: (id, data) => api.put(`/incoming/${id}/`, data),
+  delete: (id) => api.delete(`/incoming/${id}/`),
+};
+
 // Auth API
 export const authAPI = {
   login: (username, password) => api.post('/auth/login/', { username, password }),

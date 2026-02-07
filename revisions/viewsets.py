@@ -105,13 +105,12 @@ class RevisionViewSet(viewsets.ModelViewSet):
         revision = self.get_object()
         user = request.user
 
-        # Сотрудник может рассчитывать только черновики
+        # Сотрудник не рассчитывает ревизии — только отправляет на обработку
         if hasattr(user, 'role') and user.role == 'staff':
-            if revision.status != 'draft':
-                return Response(
-                    {'error': 'Можно расчитать только ревизию в статусе "Черновик"'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            return Response(
+                {'error': 'Недостаточно прав для расчета ревизии'},
+                status=status.HTTP_403_FORBIDDEN
+            )
         # Admin, manager, accounting могут рассчитывать processing и completed
         elif hasattr(user, 'role') and user.role in ['admin', 'manager', 'accounting']:
             if revision.status not in ['draft', 'processing', 'completed']:
@@ -131,22 +130,18 @@ class RevisionViewSet(viewsets.ModelViewSet):
             result = calculator.calculate_all()
 
             if result['status'] == 'success':
-                # Для сотрудника - завершаем ревизию
-                # Для admin/manager/accounting - не меняем статус, только обновляем отчет
-                if hasattr(user, 'role') and user.role == 'staff':
-                    revision.status = 'completed'
+                # Статус после расчета:
+                # - draft/submitted -> processing (ожидает подтверждения)
+                # - processing/completed -> остается как есть
+                if revision.status in ['draft', 'submitted']:
+                    revision.status = 'processing'
                     revision.save(update_fields=['status'])
-                    calculator.update_inventory()
-                elif hasattr(user, 'role') and user.role in ['admin', 'manager', 'accounting']:
-                    # Для admin/manager/accounting - не меняем статус при пересчете
-                    # Отчет обновляется, но статус остается (processing или completed)
-                    # Обновляем инвентарь только если ревизия завершена
-                    if revision.status == 'completed':
+                elif revision.status == 'completed':
+                    # Если ревизия уже завершена, пересчет должен обновить инвентарь
+                    try:
                         calculator.update_inventory()
-                else:
-                    revision.status = 'completed'
-                    revision.save(update_fields=['status'])
-                    calculator.update_inventory()
+                    except Exception as e:
+                        logger.error(f"Ошибка при обновлении инвентаря: {e}")
 
                 return Response({
                     'status': 'success',
