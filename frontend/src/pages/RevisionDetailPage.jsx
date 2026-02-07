@@ -122,6 +122,7 @@ export const RevisionDetailPage = () => {
   const [editingIngredient, setEditingIngredient] = useState(null);
   const [editingIncoming, setEditingIncoming] = useState(null);
   const [ingredientSearch, setIngredientSearch] = useState('');
+  const [incomingIngredientSearch, setIncomingIngredientSearch] = useState('');
   const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [formData, setFormData] = useState({});
@@ -289,6 +290,10 @@ export const RevisionDetailPage = () => {
   const handleAddIngredient = async (e) => {
     e.preventDefault();
     try {
+      if (!formData.ingredient) {
+        alert('Пожалуйста, выберите ингредиент из списка');
+        return;
+      }
       if (editingIngredient) {
         await revisionItemsAPI.updateIngredientItem(editingIngredient.id, {
           ...formData,
@@ -320,6 +325,14 @@ export const RevisionDetailPage = () => {
     setShowIngredientModal(true);
   };
 
+  const findIngredientByTitle = (title) => {
+    const normalized = (title || '').trim().toLowerCase();
+    return ingredients.find(i => i.title.toLowerCase() === normalized);
+  };
+
+  const ingredientTitleById = (id) =>
+    ingredients.find(i => String(i.id) === String(id))?.title || '';
+
   const handleDeleteIngredient = async (itemId) => {
     if (window.confirm('Вы уверены, что хотите удалить этот ингредиент?')) {
       try {
@@ -334,6 +347,10 @@ export const RevisionDetailPage = () => {
   const handleAddIncoming = async (e) => {
     e.preventDefault();
     try {
+      if (!incomingFormData.ingredient) {
+        alert('Пожалуйста, выберите ингредиент из списка');
+        return;
+      }
       const payload = {
         ingredient: incomingFormData.ingredient,
         quantity: incomingFormData.quantity,
@@ -364,6 +381,7 @@ export const RevisionDetailPage = () => {
       comment: item.comment || '',
       date: item.date,
     });
+    setIncomingIngredientSearch('');
     setShowIncomingModal(true);
   };
 
@@ -915,31 +933,24 @@ export const RevisionDetailPage = () => {
       >
         <form onSubmit={handleAddIngredient}>
           <FormGroup>
-            <Label>Поиск ингредиента</Label>
+            <Label>Ингредиент</Label>
             <Input
-              type="text"
-              value={ingredientSearch}
-              onChange={(e) => setIngredientSearch(e.target.value)}
+              list="ingredient-options"
+              value={ingredientSearch || ingredientTitleById(formData.ingredient)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setIngredientSearch(value);
+                const match = findIngredientByTitle(value);
+                setFormData({ ...formData, ingredient: match ? match.id : '' });
+              }}
+              required
               placeholder="Начните вводить название..."
             />
-          </FormGroup>
-          <FormGroup>
-            <Label>Ингредиент</Label>
-            <Select
-              value={formData.ingredient || ''}
-              onChange={(e) => setFormData({ ...formData, ingredient: e.target.value })}
-              required
-            >
-              <option value="">Выберите ингредиент</option>
-              {ingredients
-                .filter(i =>
-                  !ingredientSearch ||
-                  i.title.toLowerCase().includes(ingredientSearch.trim().toLowerCase())
-                )
-                .map(i => (
-                <option key={i.id} value={i.id}>{i.title}</option>
+            <datalist id="ingredient-options">
+              {ingredients.map(i => (
+                <option key={i.id} value={i.title} />
               ))}
-            </Select>
+            </datalist>
           </FormGroup>
           <FormGroup>
             <Label>Количество</Label>
@@ -968,6 +979,7 @@ export const RevisionDetailPage = () => {
           setShowIncomingModal(false);
           setIncomingFormData({});
           setEditingIncoming(null);
+          setIncomingIngredientSearch('');
         }}
         title={editingIncoming ? "Редактировать поступление" : "Добавить поступление"}
         footer={
@@ -976,6 +988,7 @@ export const RevisionDetailPage = () => {
               setShowIncomingModal(false);
               setIncomingFormData({});
               setEditingIncoming(null);
+              setIncomingIngredientSearch('');
             }}>
               Отмена
             </Button>
@@ -988,16 +1001,23 @@ export const RevisionDetailPage = () => {
         <form onSubmit={handleAddIncoming}>
           <FormGroup>
             <Label>Ингредиент</Label>
-            <Select
-              value={incomingFormData.ingredient || ''}
-              onChange={(e) => setIncomingFormData({ ...incomingFormData, ingredient: e.target.value })}
+            <Input
+              list="incoming-ingredient-options"
+              value={incomingIngredientSearch || ingredientTitleById(incomingFormData.ingredient)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setIncomingIngredientSearch(value);
+                const match = findIngredientByTitle(value);
+                setIncomingFormData({ ...incomingFormData, ingredient: match ? match.id : '' });
+              }}
               required
-            >
-              <option value="">Выберите ингредиент</option>
+              placeholder="Начните вводить название..."
+            />
+            <datalist id="incoming-ingredient-options">
               {ingredients.map(i => (
-                <option key={i.id} value={i.id}>{i.title}</option>
+                <option key={i.id} value={i.title} />
               ))}
-            </Select>
+            </datalist>
           </FormGroup>
           <FormGroup>
             <Label>Количество</Label>
