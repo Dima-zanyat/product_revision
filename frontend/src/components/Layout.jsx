@@ -3,10 +3,11 @@
  */
 
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/authStore';
-import { Button } from './Button';
+import { Button, ButtonGroup } from './Button';
 import { LoginModal } from './LoginModal';
 
 const Header = styled.header`
@@ -39,6 +40,10 @@ const HeaderRight = styled.div`
   gap: ${theme.spacing.md};
 `;
 
+const NavGroup = styled(ButtonGroup)`
+  gap: ${theme.spacing.sm};
+`;
+
 const UserInfo = styled.div`
   display: flex;
   align-items: center;
@@ -68,10 +73,15 @@ const LogoutButton = styled(Button)`
 export const Layout = ({ children }) => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await logout();
   };
+
+  const isIncoming = location.pathname.startsWith('/incoming');
+  const isRevisions = !isIncoming;
 
   return (
     <>
@@ -83,6 +93,20 @@ export const Layout = ({ children }) => {
               <p>Система контроля остатков ингредиентов</p>
             </HeaderLeft>
             <HeaderRight>
+              <NavGroup>
+                <Button
+                  variant={isRevisions ? 'primary' : 'default'}
+                  onClick={() => navigate('/')}
+                >
+                  Ревизии
+                </Button>
+                <Button
+                  variant={isIncoming ? 'primary' : 'default'}
+                  onClick={() => navigate('/incoming')}
+                >
+                  Поступления
+                </Button>
+              </NavGroup>
               {isAuthenticated && user ? (
                 <>
                   <UserInfo>

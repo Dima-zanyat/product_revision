@@ -142,7 +142,7 @@ export const RevisionDetailPage = () => {
       loadIncoming();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRevision?.id, currentRevision?.revision_date, currentRevision?.location]);
+  }, [currentRevision?.id, currentRevision?.revision_date, currentRevision?.location, currentRevision?.period_start_date]);
 
   const loadReferenceData = async () => {
     try {
@@ -159,9 +159,12 @@ export const RevisionDetailPage = () => {
 
   const loadIncoming = async () => {
     try {
+      const dateFrom = currentRevision.period_start_date ||
+        (currentRevision.revision_date ? `${currentRevision.revision_date.slice(0, 7)}-01` : undefined);
       const response = await incomingAPI.getAll({
         location: currentRevision.location,
-        date: currentRevision.revision_date,
+        date_from: dateFrom,
+        date_to: currentRevision.revision_date,
       });
       setIncomingItems(response.data?.results || response.data || []);
     } catch (error) {
@@ -684,15 +687,13 @@ export const RevisionDetailPage = () => {
         )}
       </Section>
 
-      {isManagerial && (
+      {(
         <Section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
             <SectionTitle>Поступления</SectionTitle>
-            {canEditItems && (
-              <Button variant="primary" onClick={() => setShowIncomingModal(true)}>
-                + Добавить поступление
-              </Button>
-            )}
+            <Button variant="primary" onClick={() => setShowIncomingModal(true)}>
+              + Добавить поступление
+            </Button>
           </div>
           {incomingItems && incomingItems.length > 0 ? (
             <TableContainer>
@@ -704,9 +705,7 @@ export const RevisionDetailPage = () => {
                     <TableHeaderCell>Ед. изм.</TableHeaderCell>
                     <TableHeaderCell>Дата</TableHeaderCell>
                     <TableHeaderCell>Комментарии</TableHeaderCell>
-                    {canEditItems && (
-                      <TableHeaderCell>Действия</TableHeaderCell>
-                    )}
+                    <TableHeaderCell>Действия</TableHeaderCell>
                   </tr>
                 </TableHeader>
                 <TableBody>
@@ -717,26 +716,24 @@ export const RevisionDetailPage = () => {
                       <TableCell>{item.unit_display}</TableCell>
                       <TableCell>{item.date}</TableCell>
                       <TableCell>{item.comment || '-'}</TableCell>
-                      {canEditItems && (
-                        <TableCell>
-                          <ButtonGroup>
-                            <Button
-                              variant="default"
-                              onClick={() => handleEditIncoming(item)}
-                              style={{ padding: `${theme.spacing.xs} ${theme.spacing.sm}`, fontSize: '12px' }}
-                            >
-                              ✏️
-                            </Button>
-                            <Button
-                              variant="danger"
-                              onClick={() => handleDeleteIncoming(item.id)}
-                              style={{ padding: `${theme.spacing.xs} ${theme.spacing.sm}`, fontSize: '12px' }}
-                            >
-                              🗑️
-                            </Button>
-                          </ButtonGroup>
-                        </TableCell>
-                      )}
+                      <TableCell>
+                        <ButtonGroup>
+                          <Button
+                            variant="default"
+                            onClick={() => handleEditIncoming(item)}
+                            style={{ padding: `${theme.spacing.xs} ${theme.spacing.sm}`, fontSize: '12px' }}
+                          >
+                            ✏️
+                          </Button>
+                          <Button
+                            variant="danger"
+                            onClick={() => handleDeleteIncoming(item.id)}
+                            style={{ padding: `${theme.spacing.xs} ${theme.spacing.sm}`, fontSize: '12px' }}
+                          >
+                            🗑️
+                          </Button>
+                        </ButtonGroup>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

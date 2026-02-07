@@ -11,6 +11,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { RevisionListPage } from './pages/RevisionListPage';
 import { RevisionDetailPage } from './pages/RevisionDetailPage';
 import { RevisionCreatePage } from './pages/RevisionCreatePage';
+import { IncomingListPage } from './pages/IncomingListPage';
 import { useAuthStore } from './store/authStore';
 import { authAPI } from './services/api';
 
@@ -62,6 +63,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <RevisionCreatePage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/incoming" 
+              element={
+                <ProtectedRoute>
+                  <IncomingListPage />
                 </ProtectedRoute>
               } 
             />

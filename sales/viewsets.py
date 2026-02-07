@@ -1,8 +1,7 @@
 """ViewSets для REST API приложения sales."""
 
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from .models import Location, Incoming
 from .serializers import LocationSerializer, IncomingSerializer
 
@@ -49,36 +48,3 @@ class IncomingViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(date__lte=date_to)
 
         return queryset
-
-    def _forbid_staff(self, request):
-        user = request.user
-        if hasattr(user, 'role') and user.role == 'staff':
-            return Response(
-                {'error': 'Недостаточно прав для изменения поступлений'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return None
-
-    def create(self, request, *args, **kwargs):
-        forbidden = self._forbid_staff(request)
-        if forbidden:
-            return forbidden
-        return super().create(request, *args, **kwargs)
-
-    def update(self, request, *args, **kwargs):
-        forbidden = self._forbid_staff(request)
-        if forbidden:
-            return forbidden
-        return super().update(request, *args, **kwargs)
-
-    def partial_update(self, request, *args, **kwargs):
-        forbidden = self._forbid_staff(request)
-        if forbidden:
-            return forbidden
-        return super().partial_update(request, *args, **kwargs)
-
-    def destroy(self, request, *args, **kwargs):
-        forbidden = self._forbid_staff(request)
-        if forbidden:
-            return forbidden
-        return super().destroy(request, *args, **kwargs)
