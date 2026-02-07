@@ -121,6 +121,7 @@ export const RevisionDetailPage = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [editingIngredient, setEditingIngredient] = useState(null);
   const [editingIncoming, setEditingIncoming] = useState(null);
+  const [ingredientSearch, setIngredientSearch] = useState('');
   const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [formData, setFormData] = useState({});
@@ -315,6 +316,7 @@ export const RevisionDetailPage = () => {
       actual_quantity: item.actual_quantity,
       comments: item.comments || '',
     });
+    setIngredientSearch('');
     setShowIngredientModal(true);
   };
 
@@ -533,7 +535,7 @@ export const RevisionDetailPage = () => {
       <Section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
-            <SectionTitle>Продукты ({currentRevision.product_items?.length || 0})</SectionTitle>
+            <SectionTitle>Продажи ({currentRevision.product_items?.length || 0})</SectionTitle>
             {currentRevision.product_items && currentRevision.product_items.length > 5 && (
               <Button 
                 variant="default"
@@ -892,6 +894,7 @@ export const RevisionDetailPage = () => {
           setShowIngredientModal(false);
           setFormData({});
           setEditingIngredient(null);
+          setIngredientSearch('');
         }}
         title={editingIngredient ? "Редактировать ингредиент" : "Добавить ингредиент"}
         footer={
@@ -900,6 +903,7 @@ export const RevisionDetailPage = () => {
               setShowIngredientModal(false);
               setFormData({});
               setEditingIngredient(null);
+              setIngredientSearch('');
             }}>
               Отмена
             </Button>
@@ -911,6 +915,15 @@ export const RevisionDetailPage = () => {
       >
         <form onSubmit={handleAddIngredient}>
           <FormGroup>
+            <Label>Поиск ингредиента</Label>
+            <Input
+              type="text"
+              value={ingredientSearch}
+              onChange={(e) => setIngredientSearch(e.target.value)}
+              placeholder="Начните вводить название..."
+            />
+          </FormGroup>
+          <FormGroup>
             <Label>Ингредиент</Label>
             <Select
               value={formData.ingredient || ''}
@@ -918,7 +931,12 @@ export const RevisionDetailPage = () => {
               required
             >
               <option value="">Выберите ингредиент</option>
-              {ingredients.map(i => (
+              {ingredients
+                .filter(i =>
+                  !ingredientSearch ||
+                  i.title.toLowerCase().includes(ingredientSearch.trim().toLowerCase())
+                )
+                .map(i => (
                 <option key={i.id} value={i.id}>{i.title}</option>
               ))}
             </Select>
