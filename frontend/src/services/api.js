@@ -102,6 +102,7 @@ export const referenceAPI = {
 export const productsAPI = {
   getById: (id) => api.get(`/products/${id}/`),
   create: (data) => api.post('/products/', data),
+  delete: (id) => api.delete(`/products/${id}/`),
 };
 
 // Ingredients API

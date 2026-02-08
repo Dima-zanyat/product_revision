@@ -92,6 +92,29 @@ export const RecipeCardsPage = () => {
     }
   };
 
+  const handleDeleteProduct = async () => {
+    if (!canEdit) {
+      alert('Недостаточно прав для удаления продукта');
+      return;
+    }
+    if (!selectedProductId) {
+      alert('Сначала выберите продукт');
+      return;
+    }
+    if (!window.confirm('Удалить технологическую карту (продукт) и все её позиции?')) {
+      return;
+    }
+    try {
+      await productsAPI.delete(selectedProductId);
+      setSelectedProductId('');
+      setSelectedProduct(null);
+      setProductSearch('');
+      loadReferenceData();
+    } catch (error) {
+      alert('Ошибка при удалении продукта: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
   const loadProduct = async (id) => {
     setLoading(true);
     try {
@@ -372,6 +395,11 @@ export const RecipeCardsPage = () => {
               ))}
             </datalist>
           </FormGroup>
+          {selectedProductId && canEdit && (
+            <Button variant="danger" onClick={handleDeleteProduct}>
+              🗑️ Удалить технологическую карту
+            </Button>
+          )}
         </TopRow>
 
           {loading && <p>Загрузка...</p>}
