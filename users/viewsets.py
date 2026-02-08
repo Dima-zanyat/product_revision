@@ -6,8 +6,8 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Production
-from .serializers import UserSerializer, ProductionSerializer
+from .models import Production, ProductionInvite
+from .serializers import UserSerializer, ProductionSerializer, ProductionInviteSerializer
 
 User = get_user_model()
 
@@ -55,6 +55,48 @@ class ProductionViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
+
+
+class ProductionInviteViewSet(viewsets.ModelViewSet):
+    """ViewSet для инвайтов производств (только admin)."""
+
+    queryset = ProductionInvite.objects.all()
+    serializer_class = ProductionInviteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return super().get_queryset()
+        return super().get_queryset().none()
+
+    def create(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return Response(
+                {'error': 'Недостаточно прав для создания инвайта'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        return Response(
+            {'error': 'Инвайты нельзя изменять'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return Response(
+                {'error': 'Недостаточно прав для удаления инвайта'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class UserViewSet(viewsets.ModelViewSet):

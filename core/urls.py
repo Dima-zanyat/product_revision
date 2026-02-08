@@ -14,8 +14,8 @@ from revisions.viewsets import (
 )
 from sales.viewsets import LocationViewSet, IncomingViewSet
 from products.viewsets import ProductViewSet, IngredientViewSet, RecipeItemViewSet
-from users.views import login_view, logout_view, current_user, csrf_token
-from users.viewsets import UserViewSet, ProductionViewSet
+from users.views import login_view, logout_view, current_user, csrf_token, register_manager
+from users.viewsets import UserViewSet, ProductionViewSet, ProductionInviteViewSet
 from revisions.views import upload_excel_products
 from core.views import spa
 
@@ -35,6 +35,7 @@ router.register(r'ingredients', IngredientViewSet, basename='ingredient')
 router.register(r'recipe-items', RecipeItemViewSet, basename='recipe-item')
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'productions', ProductionViewSet, basename='production')
+router.register(r'production-invites', ProductionInviteViewSet, basename='production-invite')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -49,6 +50,7 @@ urlpatterns = [
     path('api/auth/logout/', logout_view, name='logout'),
     path('api/auth/me/', current_user, name='current_user'),
     path('api/auth/csrf/', csrf_token, name='csrf_token'),
+    path('api/auth/register/', register_manager, name='register_manager'),
     path(
         'api/revision-product-items/upload-excel/',
         upload_excel_products,

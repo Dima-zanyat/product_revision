@@ -147,6 +147,7 @@ export const authAPI = {
   logout: () => api.post('/auth/logout/'),
   getCurrentUser: () => api.get('/auth/me/'),
   getCsrfToken: () => api.get('/auth/csrf/'),
+  register: (data) => api.post('/auth/register/', data),
 };
 
 export default api;

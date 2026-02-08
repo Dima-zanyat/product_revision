@@ -14,6 +14,7 @@ import { RevisionCreatePage } from './pages/RevisionCreatePage';
 import { IncomingListPage } from './pages/IncomingListPage';
 import { RecipeCardsPage } from './pages/RecipeCardsPage';
 import { ManagerCabinetPage } from './pages/ManagerCabinetPage';
+import { ProductionRegisterPage } from './pages/ProductionRegisterPage';
 import { useAuthStore } from './store/authStore';
 import { authAPI } from './services/api';
 
@@ -67,6 +68,10 @@ function App() {
                   <RevisionCreatePage />
                 </ProtectedRoute>
               } 
+            />
+            <Route 
+              path="/register/:token" 
+              element={<ProductionRegisterPage />} 
             />
             <Route 
               path="/incoming" 

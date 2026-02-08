@@ -27,6 +27,10 @@ if _render_hostname:
     _default_hosts.append(_render_hostname)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=','.join(_default_hosts)).split(',')
 ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
+FRONTEND_BASE_URL = config(
+    'FRONTEND_BASE_URL',
+    default=(f"https://{_render_hostname}" if _render_hostname else "http://localhost:3000")
+)
 
 
 # Application definition

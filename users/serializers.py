@@ -4,7 +4,7 @@ Serializers для приложения users.
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Production
+from .models import Production, ProductionInvite
 
 User = get_user_model()
 
@@ -14,8 +14,25 @@ class ProductionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Production
-        fields = ('id', 'name', 'city', 'legal_name', 'inn', 'created_at', 'updated_at')
-        read_only_fields = ('created_at', 'updated_at')
+        fields = ('id', 'unique_key', 'name', 'city', 'legal_name', 'inn', 'created_at', 'updated_at')
+        read_only_fields = ('unique_key', 'created_at', 'updated_at')
+
+
+class ProductionInviteSerializer(serializers.ModelSerializer):
+    """Serializer для ProductionInvite."""
+
+    is_used = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductionInvite
+        fields = (
+            'id', 'token', 'created_by', 'created_at',
+            'used_at', 'used_by', 'production', 'is_used'
+        )
+        read_only_fields = ('token', 'created_by', 'created_at', 'used_at', 'used_by', 'production')
+
+    def get_is_used(self, obj):
+        return obj.is_used
 
 
 class UserSerializer(serializers.ModelSerializer):
