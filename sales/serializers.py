@@ -11,7 +11,7 @@ class LocationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Location
-        fields = ('id', 'title', 'code', 'address', 'created_at')
+        fields = ('id', 'title', 'code', 'address', 'production', 'created_at')
         read_only_fields = ('created_at',)
 
 

@@ -1,14 +1,15 @@
 """ViewSets для REST API приложения sales."""
 
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 from .models import Location, Incoming
 from .serializers import LocationSerializer, IncomingSerializer
 
 
-class LocationViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet для локаций (только чтение)."""
+class LocationViewSet(viewsets.ModelViewSet):
+    """ViewSet для локаций."""
 
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
@@ -25,6 +26,81 @@ class LocationViewSet(viewsets.ReadOnlyModelViewSet):
         if getattr(user, 'production_id', None):
             return queryset.filter(production_id=user.production_id)
         return queryset.none()
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if not user.is_superuser and getattr(user, 'role', None) != 'manager':
+            return Response(
+                {'error': 'Недостаточно прав для создания точки'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        if not user.is_superuser and not getattr(user, 'production_id', None):
+            return Response(
+                {'error': 'Менеджер не привязан к производству'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if user.is_superuser:
+            serializer.save()
+        else:
+            serializer.save(production=user.production)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def _check_location_access(self, user, location):
+        if user.is_superuser:
+            return None
+        if getattr(user, 'role', None) != 'manager':
+            return Response(
+                {'error': 'Недостаточно прав для изменения точки'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        if not getattr(user, 'production_id', None):
+            return Response(
+                {'error': 'Менеджер не привязан к производству'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if location.production_id != user.production_id:
+            return Response(
+                {'error': 'Точка относится к другому производству'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return None
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        denied = self._check_location_access(request.user, instance)
+        if denied:
+            return denied
+
+        data = request.data.copy()
+        if not request.user.is_superuser:
+            data['production'] = request.user.production_id
+        serializer = self.get_serializer(instance, data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        denied = self._check_location_access(request.user, instance)
+        if denied:
+            return denied
+
+        data = request.data.copy()
+        if not request.user.is_superuser:
+            data['production'] = request.user.production_id
+        serializer = self.get_serializer(instance, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        denied = self._check_location_access(request.user, instance)
+        if denied:
+            return denied
+        return super().destroy(request, *args, **kwargs)
 
 
 class IncomingViewSet(viewsets.ModelViewSet):

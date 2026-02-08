@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { usersAPI, productionsAPI } from '../services/api';
+import { usersAPI, productionsAPI, locationsAPI } from '../services/api';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
 import { Button, ButtonGroup } from '../components/Button';
 import { Table, TableHeader, TableHeaderCell, TableBody, TableRow, TableCell, TableContainer } from '../components/Table';
@@ -18,9 +18,13 @@ export const ManagerCabinetPage = () => {
   const [productionForm, setProductionForm] = useState({});
   const [profileForm, setProfileForm] = useState({});
   const [users, setUsers] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [editingLocation, setEditingLocation] = useState(null);
   const [userForm, setUserForm] = useState({
     username: '',
     password: '',
@@ -29,11 +33,17 @@ export const ManagerCabinetPage = () => {
     first_name: '',
     last_name: '',
   });
+  const [locationForm, setLocationForm] = useState({
+    title: '',
+    code: '',
+    address: '',
+  });
 
   useEffect(() => {
     if (user?.role === 'manager') {
       loadProduction();
       loadUsers();
+      loadLocations();
       setProfileForm({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
@@ -76,6 +86,61 @@ export const ManagerCabinetPage = () => {
     }
   };
 
+  const loadLocations = async () => {
+    setLoadingLocations(true);
+    try {
+      const res = await locationsAPI.getAll();
+      const data = res.data?.results || res.data || [];
+      setLocations(data);
+    } catch (error) {
+      console.error('Ошибка загрузки точек:', error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  const openCreateLocation = () => {
+    setEditingLocation(null);
+    setLocationForm({ title: '', code: '', address: '' });
+    setShowLocationModal(true);
+  };
+
+  const openEditLocation = (loc) => {
+    setEditingLocation(loc);
+    setLocationForm({
+      title: loc.title || '',
+      code: loc.code || '',
+      address: loc.address || '',
+    });
+    setShowLocationModal(true);
+  };
+
+  const handleSaveLocation = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingLocation) {
+        await locationsAPI.update(editingLocation.id, locationForm);
+      } else {
+        await locationsAPI.create(locationForm);
+      }
+      setShowLocationModal(false);
+      setEditingLocation(null);
+      setLocationForm({ title: '', code: '', address: '' });
+      loadLocations();
+    } catch (error) {
+      alert('Ошибка при создании точки: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const handleDeleteLocation = async (loc) => {
+    if (!window.confirm('Удалить точку производства?')) return;
+    try {
+      await locationsAPI.delete(loc.id);
+      loadLocations();
+    } catch (error) {
+      alert('Ошибка при удалении: ' + (error.response?.data?.detail || error.message));
+    }
+  };
   const handleSaveProduction = async () => {
     if (!production?.id) {
       alert('Производство не найдено');
@@ -323,6 +388,54 @@ export const ManagerCabinetPage = () => {
         </CardContent>
       </Card>
 
+      <Card style={{ marginTop: theme.spacing.lg }}>
+        <CardHeader>
+          <CardTitle>Точки производства</CardTitle>
+          <Button variant="primary" onClick={openCreateLocation}>
+            + Добавить точку
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loadingLocations && <p>Загрузка...</p>}
+          {!loadingLocations && locations.length === 0 && (
+            <p style={{ color: theme.colors.textLight }}>Точек пока нет</p>
+          )}
+          {locations.length > 0 && (
+            <TableContainer>
+              <Table>
+                <TableHeader>
+                  <tr>
+                    <TableHeaderCell>Название</TableHeaderCell>
+                    <TableHeaderCell>Код</TableHeaderCell>
+                    <TableHeaderCell>Адрес</TableHeaderCell>
+                    <TableHeaderCell>Действия</TableHeaderCell>
+                  </tr>
+                </TableHeader>
+                <TableBody>
+                  {locations.map(loc => (
+                    <TableRow key={loc.id}>
+                      <TableCell>{loc.title}</TableCell>
+                      <TableCell>{loc.code || '-'}</TableCell>
+                      <TableCell>{loc.address || '-'}</TableCell>
+                      <TableCell>
+                        <ButtonGroup>
+                          <Button variant="default" onClick={() => openEditLocation(loc)} style={{ padding: '6px 10px' }}>
+                            ✏️
+                          </Button>
+                          <Button variant="danger" onClick={() => handleDeleteLocation(loc)} style={{ padding: '6px 10px' }}>
+                            🗑️
+                          </Button>
+                        </ButtonGroup>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+
       <Modal
         isOpen={showUserModal}
         onClose={() => {
@@ -395,6 +508,54 @@ export const ManagerCabinetPage = () => {
               value={userForm.password}
               onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
               required={!editingUser}
+            />
+          </FormGroup>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={showLocationModal}
+        onClose={() => {
+          setShowLocationModal(false);
+          setEditingLocation(null);
+        }}
+        title={editingLocation ? 'Редактировать точку производства' : 'Добавить точку производства'}
+        footer={
+          <>
+            <Button onClick={() => {
+              setShowLocationModal(false);
+              setEditingLocation(null);
+            }}>
+              Отмена
+            </Button>
+            <Button variant="primary" onClick={handleSaveLocation}>
+              {editingLocation ? 'Сохранить' : 'Добавить'}
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSaveLocation}>
+          <FormGroup>
+            <Label>Название</Label>
+            <Input
+              value={locationForm.title}
+              onChange={(e) => setLocationForm({ ...locationForm, title: e.target.value })}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Код</Label>
+            <Input
+              value={locationForm.code}
+              onChange={(e) => setLocationForm({ ...locationForm, code: e.target.value })}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Адрес</Label>
+            <Input
+              value={locationForm.address}
+              onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })}
             />
           </FormGroup>
         </form>

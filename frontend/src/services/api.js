@@ -98,6 +98,14 @@ export const referenceAPI = {
   getIngredients: (params) => api.get('/ingredients/', { params }).catch(() => ({ data: [] })),
 };
 
+// Locations API
+export const locationsAPI = {
+  getAll: (params) => api.get('/locations/', { params }),
+  create: (data) => api.post('/locations/', data),
+  update: (id, data) => api.put(`/locations/${id}/`, data),
+  delete: (id) => api.delete(`/locations/${id}/`),
+};
+
 // Products API
 export const productsAPI = {
   getById: (id) => api.get(`/products/${id}/`),
