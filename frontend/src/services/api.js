@@ -101,6 +101,12 @@ export const referenceAPI = {
 // Products API
 export const productsAPI = {
   getById: (id) => api.get(`/products/${id}/`),
+  create: (data) => api.post('/products/', data),
+};
+
+// Ingredients API
+export const ingredientsAPI = {
+  create: (data) => api.post('/ingredients/', data),
 };
 
 // Recipe items API (технологические карты)

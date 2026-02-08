@@ -8,7 +8,7 @@ from .models import Product, Ingredient, RecipeItem
 from .serializers import ProductSerializer, IngredientSerializer, RecipeItemSerializer
 
 
-class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+class ProductViewSet(viewsets.ModelViewSet):
     """ViewSet для продуктов (только чтение)."""
 
     queryset = Product.objects.all()
@@ -19,8 +19,41 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ('title', 'created_at')
     ordering = ['title']
 
+    def _deny_staff(self, request):
+        user = request.user
+        if hasattr(user, 'role') and user.role == 'staff':
+            return Response(
+                {'error': 'Недостаточно прав для изменения продуктов'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return None
 
-class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    def create(self, request, *args, **kwargs):
+        denied = self._deny_staff(request)
+        if denied:
+            return denied
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        denied = self._deny_staff(request)
+        if denied:
+            return denied
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        denied = self._deny_staff(request)
+        if denied:
+            return denied
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        denied = self._deny_staff(request)
+        if denied:
+            return denied
+        return super().destroy(request, *args, **kwargs)
+
+
+class IngredientViewSet(viewsets.ModelViewSet):
     """ViewSet для ингредиентов (только чтение)."""
 
     queryset = Ingredient.objects.all()
@@ -30,6 +63,39 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ('title',)
     ordering_fields = ('title', 'created_at')
     ordering = ['title']
+
+    def _deny_staff(self, request):
+        user = request.user
+        if hasattr(user, 'role') and user.role == 'staff':
+            return Response(
+                {'error': 'Недостаточно прав для изменения позиций номенкулатуры'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return None
+
+    def create(self, request, *args, **kwargs):
+        denied = self._deny_staff(request)
+        if denied:
+            return denied
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        denied = self._deny_staff(request)
+        if denied:
+            return denied
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        denied = self._deny_staff(request)
+        if denied:
+            return denied
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        denied = self._deny_staff(request)
+        if denied:
+            return denied
+        return super().destroy(request, *args, **kwargs)
 
 
 class RecipeItemViewSet(viewsets.ModelViewSet):

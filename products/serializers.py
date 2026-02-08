@@ -16,6 +16,9 @@ class IngredientSerializer(serializers.ModelSerializer):
         model = Ingredient
         fields = ('id', 'title', 'unit', 'unit_display', 'created_at')
         read_only_fields = ('created_at',)
+        extra_kwargs = {
+            'unit': {'required': False},
+        }
 
 
 class RecipeItemSerializer(serializers.ModelSerializer):

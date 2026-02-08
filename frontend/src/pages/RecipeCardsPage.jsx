@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { theme } from '../styles/theme';
-import { referenceAPI, productsAPI, recipeItemsAPI } from '../services/api';
+import { referenceAPI, productsAPI, recipeItemsAPI, ingredientsAPI } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
 import { Button, ButtonGroup } from '../components/Button';
@@ -120,6 +120,9 @@ export const RecipeCardsPage = () => {
     return products.find(p => p.title.toLowerCase() === normalized);
   };
 
+  const normalizeTitle = (value) => (value || '').trim();
+  const normalizeKey = (value) => normalizeTitle(value).toLowerCase();
+
   const recipeItems = useMemo(
     () => (selectedProduct?.recipe_items || []),
     [selectedProduct]
@@ -140,14 +143,28 @@ export const RecipeCardsPage = () => {
       alert('Недостаточно прав для изменения технологической карты');
       return;
     }
-    if (!formData.ingredient) {
-      alert('Пожалуйста, выберите позицию номенкулатуры из списка');
-      return;
-    }
     try {
+      let ingredientId = formData.ingredient;
+      if (!ingredientId) {
+        const title = normalizeTitle(ingredientSearch || ingredientTitleById(formData.ingredient));
+        if (!title) {
+          alert('Пожалуйста, выберите позицию номенкулатуры из списка');
+          return;
+        }
+        const match = findIngredientByTitle(title);
+        if (match) {
+          ingredientId = match.id;
+        } else {
+          const created = await ingredientsAPI.create({ title });
+          ingredientId = created.data?.id;
+          if (created.data) {
+            setIngredients(prev => [...prev, created.data]);
+          }
+        }
+      }
       const payload = {
         product: selectedProductId,
-        ingredient: formData.ingredient,
+        ingredient: ingredientId,
         quantity: formData.quantity,
       };
       if (editingItem) {
@@ -171,48 +188,95 @@ export const RecipeCardsPage = () => {
       alert('Недостаточно прав для изменения технологической карты');
       return;
     }
-    if (!recipeProductId) {
-      alert('Пожалуйста, выберите продукт из списка');
+    const productTitle = normalizeTitle(recipeProductSearch || productTitleById(recipeProductId));
+    if (!productTitle) {
+      alert('Пожалуйста, укажите название продукта');
       return;
     }
 
-    const rows = recipeItemsDraft.filter(row => row.ingredient || row.quantity);
+    const rows = recipeItemsDraft.filter(row => row.ingredient || row.quantity || row.ingredientSearch);
     if (rows.length === 0) {
       alert('Добавьте хотя бы одну позицию номенкулатуры');
       return;
     }
-    if (rows.some(row => !row.ingredient || row.quantity === '' || row.quantity === null)) {
+    if (rows.some(row => (!row.ingredient && !row.ingredientSearch) || row.quantity === '' || row.quantity === null)) {
       alert('Заполните все позиции номенкулатуры');
       return;
     }
 
-    const ingredientIds = rows.map(row => String(row.ingredient));
-    const uniqueIngredientIds = new Set(ingredientIds);
-    if (uniqueIngredientIds.size !== ingredientIds.length) {
-      alert('Позиции номенкулатуры не должны повторяться');
-      return;
-    }
-
     try {
+      const productMatch = findProductByTitle(productTitle);
+      let productId = productMatch ? String(productMatch.id) : '';
+      let createdProduct = null;
+      if (!productId) {
+        const created = await productsAPI.create({ title: productTitle });
+        createdProduct = created.data;
+        productId = String(createdProduct?.id || '');
+        if (!productId) {
+          throw new Error('Не удалось создать продукт');
+        }
+      }
+
+      const ingredientLookup = new Map(
+        ingredients.map(i => [normalizeKey(i.title), String(i.id)])
+      );
+      const normalizedTitles = rows.map(row =>
+        normalizeKey(row.ingredientSearch || ingredientTitleById(row.ingredient))
+      );
+      const uniqueTitles = new Set(normalizedTitles);
+      if (uniqueTitles.size !== normalizedTitles.length) {
+        alert('Позиции номенкулатуры не должны повторяться');
+        return;
+      }
+
+      const createdIngredients = [];
       for (const row of rows) {
+        const title = normalizeTitle(row.ingredientSearch || ingredientTitleById(row.ingredient));
+        const key = normalizeKey(title);
+        if (!title) {
+          alert('Позиция номенкулатуры не заполнена');
+          return;
+        }
+        let ingredientId = ingredientLookup.get(key);
+        if (!ingredientId) {
+          const createdIngredient = await ingredientsAPI.create({ title });
+          const ingredientData = createdIngredient.data;
+          ingredientId = String(ingredientData?.id || '');
+          if (!ingredientId) {
+            throw new Error('Не удалось создать позицию номенкулатуры');
+          }
+          ingredientLookup.set(key, ingredientId);
+          if (ingredientData) {
+            createdIngredients.push(ingredientData);
+          }
+        }
+
         const quantity = parseFloat(row.quantity);
         if (Number.isNaN(quantity) || quantity <= 0) {
           alert('Количество должно быть больше нуля');
           return;
         }
         await recipeItemsAPI.create({
-          product: recipeProductId,
-          ingredient: row.ingredient,
+          product: productId,
+          ingredient: ingredientId,
           quantity,
         });
       }
+      if (createdProduct) {
+        setProducts(prev => [...prev, createdProduct]);
+      }
+      if (createdIngredients.length > 0) {
+        setIngredients(prev => [...prev, ...createdIngredients]);
+      }
       resetRecipeModal();
-      setSelectedProductId(String(recipeProductId));
-      setProductSearch(productTitleById(recipeProductId));
-      loadProduct(recipeProductId);
+      setSelectedProductId(String(productId));
+      setProductSearch(productTitle);
+      loadProduct(productId);
     } catch (error) {
       alert('Ошибка при создании технологической карты: ' + (error.response?.data?.detail || error.message));
-      loadProduct(recipeProductId);
+      if (recipeProductId) {
+        loadProduct(recipeProductId);
+      }
     }
   };
 
@@ -419,18 +483,18 @@ export const RecipeCardsPage = () => {
         <form onSubmit={handleSave}>
           <FormGroup>
             <Label>Позиция номенкулатуры</Label>
-            <Input
-              list="recipe-ingredient-options"
-              value={ingredientSearch || ingredientTitleById(formData.ingredient)}
-              onChange={(e) => {
-                const value = e.target.value;
-                setIngredientSearch(value);
-                const match = findIngredientByTitle(value);
-                setFormData({ ...formData, ingredient: match ? match.id : '' });
-              }}
-              required
-              placeholder="Начните вводить название..."
-            />
+              <Input
+                list="recipe-ingredient-options"
+                value={ingredientSearch || ingredientTitleById(formData.ingredient)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setIngredientSearch(value);
+                  const match = findIngredientByTitle(value);
+                  setFormData({ ...formData, ingredient: match ? match.id : '' });
+                }}
+                required
+                placeholder="Начните вводить название..."
+              />
             <datalist id="recipe-ingredient-options">
               {ingredients.map(i => (
                 <option key={i.id} value={i.title} />
