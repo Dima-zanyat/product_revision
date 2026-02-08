@@ -13,7 +13,7 @@ from revisions.viewsets import (
     RevisionReportViewSet,
 )
 from sales.viewsets import LocationViewSet, IncomingViewSet
-from products.viewsets import ProductViewSet, IngredientViewSet
+from products.viewsets import ProductViewSet, IngredientViewSet, RecipeItemViewSet
 from users.views import login_view, logout_view, current_user, csrf_token
 from revisions.views import upload_excel_products
 from core.views import spa
@@ -31,6 +31,7 @@ router.register(r'locations', LocationViewSet, basename='location')
 router.register(r'incoming', IncomingViewSet, basename='incoming')
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'ingredients', IngredientViewSet, basename='ingredient')
+router.register(r'recipe-items', RecipeItemViewSet, basename='recipe-item')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

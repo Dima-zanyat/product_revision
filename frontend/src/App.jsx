@@ -12,6 +12,7 @@ import { RevisionListPage } from './pages/RevisionListPage';
 import { RevisionDetailPage } from './pages/RevisionDetailPage';
 import { RevisionCreatePage } from './pages/RevisionCreatePage';
 import { IncomingListPage } from './pages/IncomingListPage';
+import { RecipeCardsPage } from './pages/RecipeCardsPage';
 import { useAuthStore } from './store/authStore';
 import { authAPI } from './services/api';
 
@@ -71,6 +72,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <IncomingListPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/recipe-cards" 
+              element={
+                <ProtectedRoute>
+                  <RecipeCardsPage />
                 </ProtectedRoute>
               } 
             />

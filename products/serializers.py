@@ -21,6 +21,8 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipeItemSerializer(serializers.ModelSerializer):
     """Serializer для RecipeItem."""
 
+    product_title = serializers.CharField(
+        source='product.title', read_only=True)
     ingredient_title = serializers.CharField(
         source='ingredient.title', read_only=True)
     unit_display = serializers.CharField(
@@ -28,7 +30,7 @@ class RecipeItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecipeItem
-        fields = ('id', 'ingredient', 'ingredient_title',
+        fields = ('id', 'product', 'product_title', 'ingredient', 'ingredient_title',
                   'quantity', 'unit_display', 'created_at')
         read_only_fields = ('created_at',)
 

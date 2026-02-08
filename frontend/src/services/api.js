@@ -98,6 +98,19 @@ export const referenceAPI = {
   getIngredients: (params) => api.get('/ingredients/', { params }).catch(() => ({ data: [] })),
 };
 
+// Products API
+export const productsAPI = {
+  getById: (id) => api.get(`/products/${id}/`),
+};
+
+// Recipe items API (технологические карты)
+export const recipeItemsAPI = {
+  getAll: (params) => api.get('/recipe-items/', { params }),
+  create: (data) => api.post('/recipe-items/', data),
+  update: (id, data) => api.put(`/recipe-items/${id}/`, data),
+  delete: (id) => api.delete(`/recipe-items/${id}/`),
+};
+
 // Incoming (поступления) API
 export const incomingAPI = {
   getAll: (params) => api.get('/incoming/', { params }),

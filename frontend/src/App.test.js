@@ -29,6 +29,10 @@ jest.mock('./pages/RevisionCreatePage', () => ({
   RevisionCreatePage: () => <div>Revision Create</div>,
 }));
 
+jest.mock('./pages/RecipeCardsPage', () => ({
+  RecipeCardsPage: () => <div>Recipe Cards</div>,
+}));
+
 test('renders app routes', () => {
   render(<App />);
   expect(screen.getByText('Revision List')).toBeInTheDocument();

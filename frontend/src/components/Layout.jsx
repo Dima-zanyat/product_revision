@@ -81,7 +81,8 @@ export const Layout = ({ children }) => {
   };
 
   const isIncoming = location.pathname.startsWith('/incoming');
-  const isRevisions = !isIncoming;
+  const isRecipeCards = location.pathname.startsWith('/recipe-cards');
+  const isRevisions = location.pathname === '/' || location.pathname.startsWith('/revisions');
 
   return (
     <>
@@ -105,6 +106,12 @@ export const Layout = ({ children }) => {
                   onClick={() => navigate('/incoming')}
                 >
                   Поступления
+                </Button>
+                <Button
+                  variant={isRecipeCards ? 'primary' : 'default'}
+                  onClick={() => navigate('/recipe-cards')}
+                >
+                  Технологические карты
                 </Button>
               </NavGroup>
               {isAuthenticated && user ? (
