@@ -21,6 +21,29 @@ const TopRow = styled.div`
   margin-bottom: ${theme.spacing.lg};
 `;
 
+const SectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: ${theme.spacing.md};
+  margin-bottom: ${theme.spacing.md};
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: ${theme.colors.textDark};
+`;
+
+const DraftRow = styled.div`
+  display: flex;
+  gap: ${theme.spacing.md};
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: ${theme.spacing.md};
+`;
+
 export const RecipeCardsPage = () => {
   const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
@@ -30,10 +53,16 @@ export const RecipeCardsPage = () => {
   const { user } = useAuthStore();
 
   const [showModal, setShowModal] = useState(false);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({});
   const [ingredientSearch, setIngredientSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [recipeProductId, setRecipeProductId] = useState('');
+  const [recipeProductSearch, setRecipeProductSearch] = useState('');
+  const [recipeItemsDraft, setRecipeItemsDraft] = useState([
+    { ingredient: '', ingredientSearch: '', quantity: '' },
+  ]);
 
   useEffect(() => {
     loadReferenceData();
@@ -98,6 +127,13 @@ export const RecipeCardsPage = () => {
   const isStaff = user?.role === 'staff';
   const canEdit = Boolean(user) && !isStaff;
 
+  const resetRecipeModal = () => {
+    setShowRecipeModal(false);
+    setRecipeProductId('');
+    setRecipeProductSearch('');
+    setRecipeItemsDraft([{ ingredient: '', ingredientSearch: '', quantity: '' }]);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     if (!canEdit) {
@@ -129,6 +165,57 @@ export const RecipeCardsPage = () => {
     }
   };
 
+  const handleCreateRecipe = async (e) => {
+    e.preventDefault();
+    if (!canEdit) {
+      alert('Недостаточно прав для изменения технологической карты');
+      return;
+    }
+    if (!recipeProductId) {
+      alert('Пожалуйста, выберите продукт из списка');
+      return;
+    }
+
+    const rows = recipeItemsDraft.filter(row => row.ingredient || row.quantity);
+    if (rows.length === 0) {
+      alert('Добавьте хотя бы одну позицию номенкулатуры');
+      return;
+    }
+    if (rows.some(row => !row.ingredient || row.quantity === '' || row.quantity === null)) {
+      alert('Заполните все позиции номенкулатуры');
+      return;
+    }
+
+    const ingredientIds = rows.map(row => String(row.ingredient));
+    const uniqueIngredientIds = new Set(ingredientIds);
+    if (uniqueIngredientIds.size !== ingredientIds.length) {
+      alert('Позиции номенкулатуры не должны повторяться');
+      return;
+    }
+
+    try {
+      for (const row of rows) {
+        const quantity = parseFloat(row.quantity);
+        if (Number.isNaN(quantity) || quantity <= 0) {
+          alert('Количество должно быть больше нуля');
+          return;
+        }
+        await recipeItemsAPI.create({
+          product: recipeProductId,
+          ingredient: row.ingredient,
+          quantity,
+        });
+      }
+      resetRecipeModal();
+      setSelectedProductId(String(recipeProductId));
+      setProductSearch(productTitleById(recipeProductId));
+      loadProduct(recipeProductId);
+    } catch (error) {
+      alert('Ошибка при создании технологической карты: ' + (error.response?.data?.detail || error.message));
+      loadProduct(recipeProductId);
+    }
+  };
+
   const handleEdit = (item) => {
     setEditingItem(item);
     setFormData({
@@ -153,6 +240,36 @@ export const RecipeCardsPage = () => {
     }
   };
 
+  const handleDraftIngredientChange = (index, value) => {
+    const match = findIngredientByTitle(value);
+    setRecipeItemsDraft(items =>
+      items.map((row, i) =>
+        i === index
+          ? { ...row, ingredientSearch: value, ingredient: match ? match.id : '' }
+          : row
+      )
+    );
+  };
+
+  const handleDraftQuantityChange = (index, value) => {
+    setRecipeItemsDraft(items =>
+      items.map((row, i) =>
+        i === index ? { ...row, quantity: value } : row
+      )
+    );
+  };
+
+  const addDraftRow = () => {
+    setRecipeItemsDraft(items => [
+      ...items,
+      { ingredient: '', ingredientSearch: '', quantity: '' },
+    ]);
+  };
+
+  const removeDraftRow = (index) => {
+    setRecipeItemsDraft(items => items.filter((_, i) => i !== index));
+  };
+
   return (
     <div>
       <Card>
@@ -162,14 +279,11 @@ export const RecipeCardsPage = () => {
           <Button
             variant="primary"
             onClick={() => {
-              if (!selectedProductId) {
-                alert('Сначала выберите продукт');
-                return;
-              }
-              setShowModal(true);
+              resetRecipeModal();
+              setShowRecipeModal(true);
             }}
           >
-            + Добавить позицию
+            + Добавить технологическую карту
           </Button>
         )}
       </CardHeader>
@@ -206,6 +320,25 @@ export const RecipeCardsPage = () => {
 
           {selectedProductId && (
             <>
+              <SectionHeader>
+                <SectionTitle>
+                  Позиции номенкулатуры{selectedProduct?.title ? `: ${selectedProduct.title}` : ''}
+                </SectionTitle>
+                {canEdit && (
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      if (!selectedProductId) {
+                        alert('Сначала выберите продукт');
+                        return;
+                      }
+                      setShowModal(true);
+                    }}
+                  >
+                    + Добавить позицию номенкулатуры
+                  </Button>
+                )}
+              </SectionHeader>
               {recipeItems.length > 0 ? (
                 <TableContainer>
                   <Table>
@@ -315,6 +448,89 @@ export const RecipeCardsPage = () => {
               required
             />
           </FormGroup>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={showRecipeModal}
+        onClose={resetRecipeModal}
+        title="Добавить технологическую карту"
+        footer={
+          <>
+            <Button onClick={resetRecipeModal}>
+              Отмена
+            </Button>
+            <Button variant="primary" onClick={handleCreateRecipe}>
+              Сохранить
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleCreateRecipe}>
+          <FormGroup>
+            <Label>Продукт</Label>
+            <Input
+              list="recipe-product-create-options"
+              value={recipeProductSearch || productTitleById(recipeProductId)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setRecipeProductSearch(value);
+                const match = findProductByTitle(value);
+                setRecipeProductId(match ? String(match.id) : '');
+              }}
+              placeholder="Начните вводить название..."
+              required
+            />
+            <datalist id="recipe-product-create-options">
+              {products.map(p => (
+                <option key={p.id} value={p.title} />
+              ))}
+            </datalist>
+          </FormGroup>
+
+          {recipeItemsDraft.map((row, index) => (
+            <DraftRow key={index}>
+              <FormGroup style={{ flex: 1, minWidth: 220 }}>
+                <Label>Позиция номенкулатуры</Label>
+                <Input
+                  list="recipe-ingredient-create-options"
+                  value={row.ingredientSearch || ingredientTitleById(row.ingredient)}
+                  onChange={(e) => handleDraftIngredientChange(index, e.target.value)}
+                  placeholder="Начните вводить название..."
+                  required
+                />
+              </FormGroup>
+              <FormGroup style={{ width: 160 }}>
+                <Label>Количество</Label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={row.quantity}
+                  onChange={(e) => handleDraftQuantityChange(index, e.target.value)}
+                  required
+                />
+              </FormGroup>
+              {recipeItemsDraft.length > 1 && (
+                <Button
+                  variant="danger"
+                  onClick={() => removeDraftRow(index)}
+                  style={{ height: '38px' }}
+                  type="button"
+                >
+                  🗑️
+                </Button>
+              )}
+            </DraftRow>
+          ))}
+          <datalist id="recipe-ingredient-create-options">
+            {ingredients.map(i => (
+              <option key={i.id} value={i.title} />
+            ))}
+          </datalist>
+          <Button variant="default" onClick={addDraftRow} type="button">
+            + Добавить позицию номенкулатуры
+          </Button>
         </form>
       </Modal>
     </div>
