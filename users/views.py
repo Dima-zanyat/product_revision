@@ -10,6 +10,18 @@ from django.contrib.auth import authenticate, login, logout
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 
+def _production_payload(user):
+    production = getattr(user, 'production', None)
+    if not production:
+        return None
+    return {
+        'id': production.id,
+        'name': production.name,
+        'city': production.city,
+        'legal_name': production.legal_name,
+        'inn': production.inn,
+    }
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -39,10 +51,13 @@ def login_view(request):
                 'user': {
                     'id': user.id,
                     'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
                     'email': getattr(user, 'email', ''),
                     'role': getattr(user, 'role', None),
                     'is_staff': bool(getattr(user, 'is_staff', False)),
                     'is_superuser': bool(getattr(user, 'is_superuser', False)),
+                    'production': _production_payload(user),
                 }
             })
         else:
@@ -81,10 +96,13 @@ def current_user(request):
     return Response({
         'id': user.id,
         'username': user.username,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
         'email': getattr(user, 'email', ''),
         'role': getattr(user, 'role', None),
         'is_staff': bool(getattr(user, 'is_staff', False)),
         'is_superuser': bool(getattr(user, 'is_superuser', False)),
+        'production': _production_payload(user),
     })
 
 

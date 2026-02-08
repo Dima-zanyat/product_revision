@@ -4,12 +4,13 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.exceptions import ValidationError
 from .models import Product, Ingredient, RecipeItem
 from .serializers import ProductSerializer, IngredientSerializer, RecipeItemSerializer
 
 
 class ProductViewSet(viewsets.ModelViewSet):
-    """ViewSet для продуктов (только чтение)."""
+    """ViewSet для продуктов."""
 
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -19,6 +20,15 @@ class ProductViewSet(viewsets.ModelViewSet):
     ordering_fields = ('title', 'created_at')
     ordering = ['title']
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if user.is_superuser:
+            return queryset
+        if getattr(user, 'production_id', None):
+            return queryset.filter(production_id=user.production_id)
+        return queryset.none()
+
     def _deny_staff(self, request):
         user = request.user
         if hasattr(user, 'role') and user.role == 'staff':
@@ -27,6 +37,13 @@ class ProductViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         return None
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not getattr(user, 'production_id', None) and not user.is_superuser:
+            raise ValidationError('Пользователь не привязан к производству')
+        production = getattr(user, 'production', None)
+        serializer.save(production=production)
 
     def create(self, request, *args, **kwargs):
         denied = self._deny_staff(request)
@@ -54,7 +71,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
-    """ViewSet для ингредиентов (только чтение)."""
+    """ViewSet для ингредиентов."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
@@ -64,6 +81,15 @@ class IngredientViewSet(viewsets.ModelViewSet):
     ordering_fields = ('title', 'created_at')
     ordering = ['title']
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if user.is_superuser:
+            return queryset
+        if getattr(user, 'production_id', None):
+            return queryset.filter(production_id=user.production_id)
+        return queryset.none()
+
     def _deny_staff(self, request):
         user = request.user
         if hasattr(user, 'role') and user.role == 'staff':
@@ -72,6 +98,13 @@ class IngredientViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         return None
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not getattr(user, 'production_id', None) and not user.is_superuser:
+            raise ValidationError('Пользователь не привязан к производству')
+        production = getattr(user, 'production', None)
+        serializer.save(production=production)
 
     def create(self, request, *args, **kwargs):
         denied = self._deny_staff(request)
@@ -111,6 +144,12 @@ class RecipeItemViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
+        if not user.is_superuser:
+            if getattr(user, 'production_id', None):
+                queryset = queryset.filter(product__production_id=user.production_id)
+            else:
+                return queryset.none()
         params = self.request.query_params
 
         product = params.get('product')
@@ -122,6 +161,24 @@ class RecipeItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(ingredient=ingredient)
 
         return queryset
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        product = serializer.validated_data.get('product') or getattr(serializer.instance, 'product', None)
+        ingredient = serializer.validated_data.get('ingredient') or getattr(serializer.instance, 'ingredient', None)
+        if not product or not ingredient:
+            raise ValidationError('Не указан продукт или ингредиент')
+        if not user.is_superuser:
+            if not getattr(user, 'production_id', None):
+                raise ValidationError('Пользователь не привязан к производству')
+            if product.production_id != user.production_id or ingredient.production_id != user.production_id:
+                raise ValidationError('Продукт и номенкулатура должны принадлежать вашему производству')
+        if product.production_id != ingredient.production_id:
+            raise ValidationError('Продукт и номенкулатура должны быть из одного производства')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self.perform_create(serializer)
 
     def _deny_staff(self, request):
         user = request.user

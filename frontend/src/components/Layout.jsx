@@ -82,6 +82,7 @@ export const Layout = ({ children }) => {
 
   const isIncoming = location.pathname.startsWith('/incoming');
   const isRecipeCards = location.pathname.startsWith('/recipe-cards');
+  const isCabinet = location.pathname.startsWith('/cabinet');
   const isRevisions = location.pathname === '/' || location.pathname.startsWith('/revisions');
 
   return (
@@ -113,6 +114,14 @@ export const Layout = ({ children }) => {
                 >
                   Технологические карты
                 </Button>
+                {user?.role === 'manager' && (
+                  <Button
+                    variant={isCabinet ? 'primary' : 'default'}
+                    onClick={() => navigate('/cabinet')}
+                  >
+                    Кабинет
+                  </Button>
+                )}
               </NavGroup>
               {isAuthenticated && user ? (
                 <>

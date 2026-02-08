@@ -36,6 +36,13 @@ class RevisionViewSet(viewsets.ModelViewSet):
         """Ограничить доступ по ролям и применить фильтрацию."""
         queryset = super().get_queryset()
         user = self.request.user
+
+        # Фильтр по производству
+        if not user.is_superuser:
+            if getattr(user, 'production_id', None):
+                queryset = queryset.filter(location__production_id=user.production_id)
+            else:
+                return queryset.none()
         
         # Сотрудник видит только свои черновики (не видит отправленные)
         if hasattr(user, 'role') and user.role == 'staff':
@@ -325,6 +332,12 @@ class RevisionProductItemViewSet(viewsets.ModelViewSet):
         """Ограничить доступ по ролям."""
         queryset = super().get_queryset()
         user = self.request.user
+
+        if not user.is_superuser:
+            if getattr(user, 'production_id', None):
+                queryset = queryset.filter(revision__location__production_id=user.production_id)
+            else:
+                return queryset.none()
         
         # Сотрудник видит только свои ревизии
         if hasattr(user, 'role') and user.role == 'staff':
@@ -346,6 +359,12 @@ class RevisionIngredientItemViewSet(viewsets.ModelViewSet):
         """Ограничить доступ по ролям."""
         queryset = super().get_queryset()
         user = self.request.user
+
+        if not user.is_superuser:
+            if getattr(user, 'production_id', None):
+                queryset = queryset.filter(revision__location__production_id=user.production_id)
+            else:
+                return queryset.none()
         
         # Сотрудник видит только свои ревизии
         if hasattr(user, 'role') and user.role == 'staff':
@@ -369,6 +388,12 @@ class RevisionReportViewSet(viewsets.ReadOnlyModelViewSet):
         """Ограничить доступ по ролям."""
         queryset = super().get_queryset()
         user = self.request.user
+
+        if not user.is_superuser:
+            if getattr(user, 'production_id', None):
+                queryset = queryset.filter(revision__location__production_id=user.production_id)
+            else:
+                return queryset.none()
         
         # Сотрудник видит только свои ревизии
         if hasattr(user, 'role') and user.role == 'staff':

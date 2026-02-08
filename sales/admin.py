@@ -11,14 +11,14 @@ from .models import Location, Sales, Incoming, Inventory, IngredientInventory
 class LocationAdmin(admin.ModelAdmin):
     """Admin для точек производства."""
 
-    list_display = ('id', 'title', 'code', 'address', 'created_at')
-    list_filter = ('created_at',)
+    list_display = ('id', 'title', 'production', 'code', 'address', 'created_at')
+    list_filter = ('production', 'created_at')
     search_fields = ('title', 'code', 'address')
     readonly_fields = ('created_at',)
 
     fieldsets = (
         ('Информация', {
-            'fields': ('title', 'code', 'address')
+            'fields': ('title', 'production', 'code', 'address')
         }),
         ('Сроки', {
             'fields': ('created_at',),

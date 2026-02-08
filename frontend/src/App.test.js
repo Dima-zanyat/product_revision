@@ -33,6 +33,10 @@ jest.mock('./pages/RecipeCardsPage', () => ({
   RecipeCardsPage: () => <div>Recipe Cards</div>,
 }));
 
+jest.mock('./pages/ManagerCabinetPage', () => ({
+  ManagerCabinetPage: () => <div>Manager Cabinet</div>,
+}));
+
 test('renders app routes', () => {
   render(<App />);
   expect(screen.getByText('Revision List')).toBeInTheDocument();

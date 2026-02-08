@@ -8,6 +8,7 @@
 """
 
 from django.db import models
+from users.models import Production
 
 
 CHOICES_UNIT = [
@@ -21,6 +22,14 @@ CHOICES_UNIT = [
 class Ingredient(models.Model):
     """Ингредиент с единицей измерения."""
 
+    production = models.ForeignKey(
+        Production,
+        on_delete=models.CASCADE,
+        related_name='ingredients',
+        verbose_name='Производство',
+        null=True,
+        blank=True
+    )
     title = models.CharField(
         max_length=50,
         verbose_name='Название'
@@ -47,6 +56,14 @@ class Ingredient(models.Model):
 class Product(models.Model):
     """Продукт, который может производиться на разных точках."""
 
+    production = models.ForeignKey(
+        Production,
+        on_delete=models.CASCADE,
+        related_name='products',
+        verbose_name='Производство',
+        null=True,
+        blank=True
+    )
     title = models.CharField(
         max_length=50,
         verbose_name='Название продукта'

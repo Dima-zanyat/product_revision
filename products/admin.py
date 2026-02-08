@@ -19,14 +19,14 @@ class RecipeItemInline(admin.TabularInline):
 class IngredientAdmin(admin.ModelAdmin):
     """Admin для ингредиентов."""
 
-    list_display = ('id', 'title', 'unit', 'created_at')
-    list_filter = ('unit', 'created_at')
+    list_display = ('id', 'title', 'unit', 'production', 'created_at')
+    list_filter = ('unit', 'production', 'created_at')
     search_fields = ('title',)
     readonly_fields = ('created_at',)
 
     fieldsets = (
         ('Информация', {
-            'fields': ('title', 'unit')
+            'fields': ('title', 'unit', 'production')
         }),
         ('Сроки', {
             'fields': ('created_at',),
@@ -39,8 +39,8 @@ class IngredientAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     """Admin для продуктов."""
 
-    list_display = ('id', 'title', 'recipe_count', 'created_at')
-    list_filter = ('created_at',)
+    list_display = ('id', 'title', 'production', 'recipe_count', 'created_at')
+    list_filter = ('production', 'created_at')
     list_display_links = ('id', 'title')
     search_fields = ('title', 'description')
     readonly_fields = ('created_at',)
@@ -48,7 +48,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Информация', {
-            'fields': ('title', 'description')
+            'fields': ('title', 'description', 'production')
         }),
         ('Сроки', {
             'fields': ('created_at',),
@@ -79,7 +79,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Продукт', {
-            'fields': ('title', 'description')
+            'fields': ('title', 'description', 'production')
         }),
         ('Сроки', {
             'fields': ('created_at',),

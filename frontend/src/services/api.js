@@ -110,6 +110,20 @@ export const ingredientsAPI = {
   create: (data) => api.post('/ingredients/', data),
 };
 
+// Users API
+export const usersAPI = {
+  getAll: (params) => api.get('/users/', { params }),
+  create: (data) => api.post('/users/', data),
+  update: (id, data) => api.patch(`/users/${id}/`, data),
+  delete: (id) => api.delete(`/users/${id}/`),
+};
+
+// Productions API
+export const productionsAPI = {
+  getById: (id) => api.get(`/productions/${id}/`),
+  update: (id, data) => api.put(`/productions/${id}/`, data),
+};
+
 // Recipe items API (технологические карты)
 export const recipeItemsAPI = {
   getAll: (params) => api.get('/recipe-items/', { params }),

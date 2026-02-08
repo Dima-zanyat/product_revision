@@ -4,6 +4,7 @@ Serializers для приложения revisions.
 
 from datetime import timedelta
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from .models import Revision, RevisionProductItem, RevisionIngredientItem, RevisionReport
  
 
@@ -24,6 +25,19 @@ class RevisionSerializer(serializers.ModelSerializer):
                   'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
 
+    def validate_location(self, value):
+        request = self.context.get('request')
+        if request is None:
+            return value
+        user = request.user
+        if user.is_superuser:
+            return value
+        if not getattr(user, 'production_id', None):
+            raise ValidationError('Пользователь не привязан к производству')
+        if value.production_id != user.production_id:
+            raise ValidationError('Точка производства относится к другому производству')
+        return value
+
 
 class RevisionProductItemSerializer(serializers.ModelSerializer):
     """Serializer для RevisionProductItem."""
@@ -36,6 +50,14 @@ class RevisionProductItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'revision', 'product', 'product_title',
                   'actual_quantity', 'comments', 'created_at')
         read_only_fields = ('created_at',)
+
+    def validate(self, attrs):
+        revision = attrs.get('revision') or getattr(self.instance, 'revision', None)
+        product = attrs.get('product') or getattr(self.instance, 'product', None)
+        if revision and product:
+            if revision.location.production_id and product.production_id != revision.location.production_id:
+                raise ValidationError('Продукт должен принадлежать тому же производству, что и ревизия')
+        return attrs
 
 
 class RevisionIngredientItemSerializer(serializers.ModelSerializer):
@@ -51,6 +73,14 @@ class RevisionIngredientItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'revision', 'ingredient', 'ingredient_title',
                   'actual_quantity', 'unit_display', 'comments', 'created_at')
         read_only_fields = ('created_at',)
+
+    def validate(self, attrs):
+        revision = attrs.get('revision') or getattr(self.instance, 'revision', None)
+        ingredient = attrs.get('ingredient') or getattr(self.instance, 'ingredient', None)
+        if revision and ingredient:
+            if revision.location.production_id and ingredient.production_id != revision.location.production_id:
+                raise ValidationError('Позиция номенкулатуры должна принадлежать тому же производству, что и ревизия')
+        return attrs
 
 
 class RevisionReportSerializer(serializers.ModelSerializer):

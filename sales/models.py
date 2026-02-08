@@ -10,11 +10,20 @@
 
 from django.db import models
 from products.models import Product, Ingredient
+from users.models import Production
 
 
 class Location(models.Model):
     """Точка производства (пекарня, цех, филиал и т.д.)"""
 
+    production = models.ForeignKey(
+        Production,
+        on_delete=models.CASCADE,
+        related_name='locations',
+        verbose_name='Производство',
+        null=True,
+        blank=True
+    )
     title = models.CharField(
         max_length=100,
         verbose_name='Название точки производства'
