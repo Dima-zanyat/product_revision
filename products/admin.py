@@ -70,9 +70,9 @@ class RecipeAdmin(admin.ModelAdmin):
     Технически это тот же Product (proxy), но в админке отображается как "Рецепты".
     """
 
-    list_display = ('id', 'title', 'recipe_count', 'created_at')
+    list_display = ('id', 'title', 'production', 'recipe_count', 'created_at')
     list_display_links = ('id', 'title')
-    list_filter = ('created_at',)
+    list_filter = ('production', 'created_at')
     search_fields = ('title', 'description')
     readonly_fields = ('created_at',)
     inlines = [RecipeItemInline]
