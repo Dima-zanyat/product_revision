@@ -101,6 +101,7 @@ const ReportStatus = styled.span`
 
 const Difference = styled.span`
   color: ${props => {
+    if (props.status === 'critical') return theme.colors.danger;
     if (props.value < 0) return theme.colors.danger;
     if (props.value > 0) return theme.colors.warning;
     return theme.colors.success;
@@ -826,7 +827,7 @@ export const RevisionDetailPage = () => {
                       <TableCell>{report.expected_quantity} {report.unit_display}</TableCell>
                       <TableCell>{report.actual_quantity} {report.unit_display}</TableCell>
                       <TableCell>
-                        <Difference value={report.difference}>
+                        <Difference value={report.difference} status={report.status}>
                           {report.difference > 0 ? '+' : ''}{report.difference} {report.unit_display}
                         </Difference>
                       </TableCell>
