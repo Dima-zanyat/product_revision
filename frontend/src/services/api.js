@@ -149,6 +149,11 @@ export const incomingAPI = {
   delete: (id) => api.delete(`/incoming/${id}/`),
 };
 
+// Ingredient inventories (текущие остатки номенклатуры) API
+export const ingredientInventoriesAPI = {
+  getAll: (params) => api.get('/ingredient-inventories/', { params }),
+};
+
 // Auth API
 export const authAPI = {
   login: (username, password) => api.post('/auth/login/', { username, password }),

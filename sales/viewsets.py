@@ -4,8 +4,12 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from .models import Location, Incoming
-from .serializers import LocationSerializer, IncomingSerializer
+from .models import Location, Incoming, IngredientInventory
+from .serializers import (
+    LocationSerializer,
+    IncomingSerializer,
+    IngredientInventorySerializer,
+)
 
 
 class LocationViewSet(viewsets.ModelViewSet):
@@ -161,3 +165,43 @@ class IncomingViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         self._validate_production(self.request, serializer)
         serializer.save()
+
+
+class IngredientInventoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet для просмотра текущих остатков номенклатуры."""
+
+    queryset = IngredientInventory.objects.select_related('ingredient', 'location')
+    serializer_class = IngredientInventorySerializer
+    permission_classes = [IsAuthenticated]
+    ordering_fields = ('updated_at', 'ingredient__title')
+    ordering = ['ingredient__title']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+
+        if not user.is_superuser:
+            if getattr(user, 'role', None) != 'manager':
+                return queryset.none()
+            if not getattr(user, 'production_id', None):
+                return queryset.none()
+            queryset = queryset.filter(
+                ingredient__production_id=user.production_id,
+                location__production_id=user.production_id,
+            )
+
+        params = self.request.query_params
+
+        location = params.get('location')
+        if location:
+            queryset = queryset.filter(location_id=location)
+
+        ingredient = params.get('ingredient')
+        if ingredient:
+            queryset = queryset.filter(ingredient_id=ingredient)
+
+        q = params.get('q')
+        if q:
+            queryset = queryset.filter(ingredient__title__icontains=q.strip())
+
+        return queryset

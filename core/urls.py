@@ -12,7 +12,7 @@ from revisions.viewsets import (
     RevisionIngredientItemViewSet,
     RevisionReportViewSet,
 )
-from sales.viewsets import LocationViewSet, IncomingViewSet
+from sales.viewsets import LocationViewSet, IncomingViewSet, IngredientInventoryViewSet
 from products.viewsets import ProductViewSet, IngredientViewSet, RecipeItemViewSet
 from users.views import login_view, logout_view, current_user, csrf_token, register_manager
 from users.viewsets import UserViewSet, ProductionViewSet, ProductionInviteViewSet
@@ -30,6 +30,7 @@ router.register(r'revision-reports', RevisionReportViewSet,
                 basename='revision-report')
 router.register(r'locations', LocationViewSet, basename='location')
 router.register(r'incoming', IncomingViewSet, basename='incoming')
+router.register(r'ingredient-inventories', IngredientInventoryViewSet, basename='ingredient-inventory')
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'ingredients', IngredientViewSet, basename='ingredient')
 router.register(r'recipe-items', RecipeItemViewSet, basename='recipe-item')

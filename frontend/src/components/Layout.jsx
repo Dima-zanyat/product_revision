@@ -81,6 +81,7 @@ export const Layout = ({ children }) => {
   };
 
   const isIncoming = location.pathname.startsWith('/incoming');
+  const isIngredientInventories = location.pathname.startsWith('/ingredient-inventories');
   const isRecipeCards = location.pathname.startsWith('/recipe-cards');
   const isCabinet = location.pathname.startsWith('/cabinet');
   const isRevisions = location.pathname === '/' || location.pathname.startsWith('/revisions');
@@ -108,6 +109,14 @@ export const Layout = ({ children }) => {
                 >
                   Поступления
                 </Button>
+                {user?.role === 'manager' && (
+                  <Button
+                    variant={isIngredientInventories ? 'primary' : 'default'}
+                    onClick={() => navigate('/ingredient-inventories')}
+                  >
+                    Текущие остатки
+                  </Button>
+                )}
                 <Button
                   variant={isRecipeCards ? 'primary' : 'default'}
                   onClick={() => navigate('/recipe-cards')}
