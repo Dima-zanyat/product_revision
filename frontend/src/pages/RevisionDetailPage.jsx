@@ -17,6 +17,8 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { revisionItemsAPI, referenceAPI, incomingAPI } from '../services/api';
 
+const warningBrown = '#8B5A2B';
+
 const PageHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -78,7 +80,7 @@ const ReportStatus = styled.span`
       case 'ok':
         return '#4CAF5055';
       case 'warning':
-        return '#FFD70055';
+        return '#8B5A2B33';
       case 'critical':
         return '#FF6B6B55';
       default:
@@ -90,7 +92,7 @@ const ReportStatus = styled.span`
       case 'ok':
         return theme.colors.success;
       case 'warning':
-        return theme.colors.warning;
+        return warningBrown;
       case 'critical':
         return theme.colors.danger;
       default:
@@ -102,6 +104,8 @@ const ReportStatus = styled.span`
 const Difference = styled.span`
   color: ${props => {
     if (props.status === 'critical') return theme.colors.danger;
+    if (props.status === 'warning') return warningBrown;
+    if (props.status === 'ok') return theme.colors.success;
     if (props.value < 0) return theme.colors.danger;
     if (props.value > 0) return theme.colors.warning;
     return theme.colors.success;
