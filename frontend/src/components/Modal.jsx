@@ -3,6 +3,7 @@
  */
 
 import { useEffect } from 'react';
+import { useRef } from 'react';
 import styled from 'styled-components';
 import { theme } from '../styles/theme';
 
@@ -80,6 +81,8 @@ const ModalFooter = styled.div`
 `;
 
 export const Modal = ({ isOpen, onClose, title, children, footer }) => {
+  const shouldCloseOnMouseUpRef = useRef(false);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -95,7 +98,17 @@ export const Modal = ({ isOpen, onClose, title, children, footer }) => {
   if (!isOpen) return null;
 
   return (
-    <Overlay onClick={onClose}>
+    <Overlay
+      onMouseDown={(e) => {
+        shouldCloseOnMouseUpRef.current = e.target === e.currentTarget;
+      }}
+      onMouseUp={(e) => {
+        if (shouldCloseOnMouseUpRef.current && e.target === e.currentTarget) {
+          onClose();
+        }
+        shouldCloseOnMouseUpRef.current = false;
+      }}
+    >
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
           <ModalTitle>{title}</ModalTitle>
