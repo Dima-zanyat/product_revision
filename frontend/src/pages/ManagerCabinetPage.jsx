@@ -21,6 +21,8 @@ export const ManagerCabinetPage = () => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showProductionModal, setShowProductionModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -151,6 +153,7 @@ export const ManagerCabinetPage = () => {
       alert('Данные производства обновлены');
       await checkAuth();
       loadProduction();
+      setShowProductionModal(false);
     } catch (error) {
       alert('Ошибка при обновлении: ' + (error.response?.data?.detail || error.message));
     }
@@ -170,9 +173,30 @@ export const ManagerCabinetPage = () => {
       alert('Профиль обновлен');
       setProfileForm({ ...profileForm, password: '' });
       await checkAuth();
+      setShowProfileModal(false);
     } catch (error) {
       alert('Ошибка при обновлении профиля: ' + (error.response?.data?.detail || error.message));
     }
+  };
+
+  const openEditProfile = () => {
+    setProfileForm({
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      email: user?.email || '',
+      password: '',
+    });
+    setShowProfileModal(true);
+  };
+
+  const openEditProduction = () => {
+    setProductionForm({
+      name: production?.name || '',
+      city: production?.city || '',
+      legal_name: production?.legal_name || '',
+      inn: production?.inn || '',
+    });
+    setShowProductionModal(true);
   };
 
   const openCreateUser = () => {
@@ -263,41 +287,11 @@ export const ManagerCabinetPage = () => {
           <CardTitle>Мой профиль</CardTitle>
         </CardHeader>
         <CardContent>
-          <FormGroup>
-            <Label>Имя</Label>
-            <Input
-              value={profileForm.first_name || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
-              placeholder="Введите имя"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Фамилия</Label>
-            <Input
-              value={profileForm.last_name || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
-              placeholder="Введите фамилию"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={profileForm.email || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-              placeholder="example@mail.com"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Новый пароль (если нужно)</Label>
-            <PasswordInput
-              value={profileForm.password || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
-              placeholder="Введите новый пароль"
-            />
-          </FormGroup>
-          <Button variant="primary" onClick={handleSaveProfile}>
-            Сохранить профиль
+          <p><strong>Имя:</strong> {user?.first_name || '-'}</p>
+          <p><strong>Фамилия:</strong> {user?.last_name || '-'}</p>
+          <p><strong>Email:</strong> {user?.email || '-'}</p>
+          <Button variant="primary" onClick={openEditProfile} style={{ marginTop: theme.spacing.md }}>
+            Редактировать профиль
           </Button>
         </CardContent>
       </Card>
@@ -307,40 +301,17 @@ export const ManagerCabinetPage = () => {
           <CardTitle>Производство</CardTitle>
         </CardHeader>
         <CardContent>
-          <FormGroup>
-            <Label>Название пекарни</Label>
-            <Input
-              value={productionForm.name || ''}
-              onChange={(e) => setProductionForm({ ...productionForm, name: e.target.value })}
-              placeholder="Например: Пекарня Любимая"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Город</Label>
-            <Input
-              value={productionForm.city || ''}
-              onChange={(e) => setProductionForm({ ...productionForm, city: e.target.value })}
-              placeholder="Например: Москва"
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>Название ИП</Label>
-            <Input
-              value={productionForm.legal_name || ''}
-              onChange={(e) => setProductionForm({ ...productionForm, legal_name: e.target.value })}
-              placeholder="Например: ИП Иванов И.И."
-            />
-          </FormGroup>
-          <FormGroup>
-            <Label>ИНН (необязательно)</Label>
-            <Input
-              value={productionForm.inn || ''}
-              onChange={(e) => setProductionForm({ ...productionForm, inn: e.target.value })}
-              placeholder="10 или 12 цифр"
-            />
-          </FormGroup>
-          <Button variant="primary" onClick={handleSaveProduction}>
-            Сохранить производство
+          <p><strong>Название пекарни:</strong> {production?.name || '-'}</p>
+          <p><strong>Город:</strong> {production?.city || '-'}</p>
+          <p><strong>Название ИП:</strong> {production?.legal_name || '-'}</p>
+          <p><strong>ИНН:</strong> {production?.inn || '-'}</p>
+          <Button
+            variant="primary"
+            onClick={openEditProduction}
+            style={{ marginTop: theme.spacing.md }}
+            disabled={!production?.id}
+          >
+            Редактировать производство
           </Button>
         </CardContent>
       </Card>
@@ -444,6 +415,105 @@ export const ManagerCabinetPage = () => {
       </Card>
 
       <Modal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        title="Редактировать профиль"
+        footer={
+          <>
+            <Button onClick={() => setShowProfileModal(false)}>
+              Отмена
+            </Button>
+            <Button variant="primary" onClick={handleSaveProfile}>
+              Сохранить профиль
+            </Button>
+          </>
+        }
+      >
+        <FormGroup>
+          <Label>Имя</Label>
+          <Input
+            value={profileForm.first_name || ''}
+            onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
+            placeholder="Введите имя"
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Фамилия</Label>
+          <Input
+            value={profileForm.last_name || ''}
+            onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
+            placeholder="Введите фамилию"
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Email</Label>
+          <Input
+            type="email"
+            value={profileForm.email || ''}
+            onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+            placeholder="example@mail.com"
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Новый пароль (если нужно)</Label>
+          <PasswordInput
+            value={profileForm.password || ''}
+            onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
+            placeholder="Введите новый пароль"
+          />
+        </FormGroup>
+      </Modal>
+
+      <Modal
+        isOpen={showProductionModal}
+        onClose={() => setShowProductionModal(false)}
+        title="Редактировать производство"
+        footer={
+          <>
+            <Button onClick={() => setShowProductionModal(false)}>
+              Отмена
+            </Button>
+            <Button variant="primary" onClick={handleSaveProduction}>
+              Сохранить производство
+            </Button>
+          </>
+        }
+      >
+        <FormGroup>
+          <Label>Название пекарни</Label>
+          <Input
+            value={productionForm.name || ''}
+            onChange={(e) => setProductionForm({ ...productionForm, name: e.target.value })}
+            placeholder="Например: Пекарня Любимая"
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Город</Label>
+          <Input
+            value={productionForm.city || ''}
+            onChange={(e) => setProductionForm({ ...productionForm, city: e.target.value })}
+            placeholder="Например: Москва"
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>Название ИП</Label>
+          <Input
+            value={productionForm.legal_name || ''}
+            onChange={(e) => setProductionForm({ ...productionForm, legal_name: e.target.value })}
+            placeholder="Например: ИП Иванов И.И."
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label>ИНН (необязательно)</Label>
+          <Input
+            value={productionForm.inn || ''}
+            onChange={(e) => setProductionForm({ ...productionForm, inn: e.target.value })}
+            placeholder="10 или 12 цифр"
+          />
+        </FormGroup>
+      </Modal>
+
+      <Modal
         isOpen={showUserModal}
         onClose={() => {
           setShowUserModal(false);
@@ -504,12 +574,12 @@ export const ManagerCabinetPage = () => {
             />
           </FormGroup>
           <FormGroup>
-            <Label>Email</Label>
+            <Label>Email (необязательно)</Label>
             <Input
               type="email"
               value={userForm.email}
               onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-              placeholder="example@mail.com"
+              placeholder="example@mail.com (необязательно)"
             />
           </FormGroup>
           <FormGroup>

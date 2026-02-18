@@ -39,6 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer для пользователей."""
 
     password = serializers.CharField(write_only=True, required=False)
+    email = serializers.EmailField(required=False, allow_blank=True)
     production = serializers.PrimaryKeyRelatedField(read_only=True)
     created_by = serializers.PrimaryKeyRelatedField(read_only=True)
 
