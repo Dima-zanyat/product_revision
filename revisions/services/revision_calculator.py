@@ -38,6 +38,7 @@ class RevisionCalculator:
         """
         self.revision = revision
         self.location = revision.location
+        self.production_id = getattr(self.location, 'production_id', None)
         self.revision_date = revision.revision_date
         logger.info(
             f"Инициализирован калькулятор для ревизии {revision.id} ({self.location.title})")
@@ -61,9 +62,28 @@ class RevisionCalculator:
             sales_data = self._get_sales_data(previous_revision)
             logger.info(f"Получено {len(sales_data)} позиций продаж")
 
-            # Получить все ингредиенты
-            ingredients = Ingredient.objects.all()
-            logger.info(f"Обработка {ingredients.count()} ингредиентов")
+            # Получить ингредиенты только текущего производства
+            if self.production_id:
+                ingredients = Ingredient.objects.filter(
+                    production_id=self.production_id
+                ).order_by('id')
+            else:
+                ingredients = Ingredient.objects.all().order_by('id')
+
+            ingredient_ids = list(ingredients.values_list('id', flat=True))
+
+            # Удалить старые отчеты по "чужим" ингредиентам этой ревизии
+            stale_reports = RevisionReport.objects.filter(
+                revision=self.revision
+            ).exclude(ingredient_id__in=ingredient_ids)
+            stale_count = stale_reports.count()
+            if stale_count:
+                stale_reports.delete()
+                logger.info(
+                    f"Удалено {stale_count} устаревших отчетов вне производства ревизии {self.revision.id}"
+                )
+
+            logger.info(f"Обработка {len(ingredient_ids)} ингредиентов")
 
             # Расчитать расход для каждого ингредиента
             reports_created = 0
@@ -277,6 +297,8 @@ class RevisionCalculator:
 
         # Получить все строки рецептов, содержащие этот ингредиент
         recipes = RecipeItem.objects.filter(ingredient=ingredient)
+        if self.production_id:
+            recipes = recipes.filter(product__production_id=self.production_id)
 
         for recipe in recipes:
             product_id = recipe.product_id
