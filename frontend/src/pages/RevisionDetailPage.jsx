@@ -296,7 +296,7 @@ export const RevisionDetailPage = () => {
     e.preventDefault();
     try {
       if (!formData.ingredient) {
-        alert('Пожалуйста, выберите ингредиент из списка');
+        alert('Пожалуйста, выберите позицию номенклатуры из списка');
         return;
       }
       if (editingIngredient) {
@@ -315,7 +315,7 @@ export const RevisionDetailPage = () => {
       setEditingIngredient(null);
       fetchRevision(id);
     } catch (error) {
-      alert('Ошибка при сохранении ингредиента: ' + (error.response?.data?.detail || error.message));
+      alert('Ошибка при сохранении позиции номенклатуры: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -339,12 +339,12 @@ export const RevisionDetailPage = () => {
     ingredients.find(i => String(i.id) === String(id))?.title || '';
 
   const handleDeleteIngredient = async (itemId) => {
-    if (window.confirm('Вы уверены, что хотите удалить этот ингредиент?')) {
+    if (window.confirm('Вы уверены, что хотите удалить эту позицию номенклатуры?')) {
       try {
         await revisionItemsAPI.deleteIngredientItem(itemId);
         fetchRevision(id);
       } catch (error) {
-        alert('Ошибка при удалении ингредиента: ' + (error.response?.data?.detail || error.message));
+        alert('Ошибка при удалении позиции номенклатуры: ' + (error.response?.data?.detail || error.message));
       }
     }
   };
@@ -353,7 +353,7 @@ export const RevisionDetailPage = () => {
     e.preventDefault();
     try {
       if (!incomingFormData.ingredient) {
-        alert('Пожалуйста, выберите ингредиент из списка');
+        alert('Пожалуйста, выберите позицию номенклатуры из списка');
         return;
       }
       const payload = {
@@ -654,7 +654,7 @@ export const RevisionDetailPage = () => {
           </div>
           {canEditItems && (
             <Button variant="primary" onClick={() => setShowIngredientModal(true)}>
-              + Добавить ингредиент
+              + Добавить позицию
             </Button>
           )}
         </div>
@@ -919,7 +919,7 @@ export const RevisionDetailPage = () => {
           setEditingIngredient(null);
           setIngredientSearch('');
         }}
-        title={editingIngredient ? "Редактировать ингредиент" : "Добавить ингредиент"}
+        title={editingIngredient ? "Редактировать позицию номенклатуры" : "Добавить позицию номенклатуры"}
         footer={
           <>
             <Button onClick={() => {
