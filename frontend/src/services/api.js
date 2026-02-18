@@ -154,6 +154,11 @@ export const ingredientInventoriesAPI = {
   getAll: (params) => api.get('/ingredient-inventories/', { params }),
 };
 
+// Assistant API
+export const assistantAPI = {
+  chat: (data) => api.post('/assistant/chat/', data),
+};
+
 // Auth API
 export const authAPI = {
   login: (username, password) => api.post('/auth/login/', { username, password }),

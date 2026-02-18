@@ -196,3 +196,10 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+# Assistant (LLM)
+ASSISTANT_ENABLE_LLM = config('ASSISTANT_ENABLE_LLM', default=True, cast=bool)
+ASSISTANT_MAX_HISTORY = config('ASSISTANT_MAX_HISTORY', default=10, cast=int)
+OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
+OPENAI_BASE_URL = config('OPENAI_BASE_URL', default='https://api.openai.com/v1')
+OPENAI_MODEL = config('OPENAI_MODEL', default='gpt-4.1-mini')

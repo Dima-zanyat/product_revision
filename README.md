@@ -22,6 +22,7 @@
 - 📄 Детальный отчет по каждой ревизии
 - ⚛️ Современный frontend на React
 - 🎨 Единый дизайн и тема приложения
+- 🤖 Встроенный ИИ-ассистент в интерфейсе (чат-помощник)
 
 ---
 
@@ -120,6 +121,7 @@ GET    /api/revisions/{id}/
 GET    /api/revision-product-items/
 GET    /api/revision-ingredient-items/
 GET    /api/revision-reports/
+POST   /api/assistant/chat/
 ```
 
 ---
@@ -167,6 +169,10 @@ docker compose exec backend python manage.py collectstatic --noinput
 - `SECRET_KEY` — секретный ключ Django
 - `ENVIRONMENT=production`
 - `USE_HTTPS=true`
+- `OPENAI_API_KEY` — ключ OpenAI для реального ИИ-ассистента
+- `OPENAI_MODEL` — модель (по умолчанию `gpt-4.1-mini`)
+- `OPENAI_BASE_URL` — базовый URL API (по умолчанию `https://api.openai.com/v1`)
+- `ASSISTANT_ENABLE_LLM=true` — включение LLM-режима ассистента
 
 **Healthcheck:**
 - `GET /api/health/` → `{ "status": "ok" }`
@@ -266,4 +272,3 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-

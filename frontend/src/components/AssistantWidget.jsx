@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { theme } from '../styles/theme';
+import { assistantAPI } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 
 const FloatingButton = styled.button`
@@ -28,8 +29,8 @@ const Panel = styled.div`
   position: fixed;
   right: ${theme.spacing.lg};
   bottom: 92px;
-  width: min(400px, calc(100vw - 32px));
-  height: min(580px, calc(100vh - 140px));
+  width: min(420px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 140px));
   background: ${theme.colors.white};
   border-radius: ${theme.borderRadius.lg};
   box-shadow: ${theme.shadows.lg};
@@ -151,300 +152,86 @@ const SendButton = styled.button`
   &:hover {
     background: ${theme.colors.primaryDark};
   }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 const QUICK_PROMPTS = [
   'Что делать на этой странице?',
   'Покажи доступные разделы',
-  'Какие у меня права по роли?',
+  'Как провести ревизию?',
 ];
 
-const SECTION_DEFINITIONS = [
-  {
-    key: 'revisions',
-    path: '/',
-    title: 'Ревизии',
-    description: 'Создание ревизий, заполнение продаж/номенклатуры, расчет и подтверждение.',
-    visibleFor: ['admin', 'manager', 'accounting', 'staff'],
-    match: (pathname) => pathname === '/' || pathname.startsWith('/revisions'),
-  },
-  {
-    key: 'incoming',
-    path: '/incoming',
-    title: 'Поступления',
-    description: 'Ввод и контроль поступлений позиции номенклатуры по точкам.',
-    visibleFor: ['admin', 'manager', 'accounting', 'staff'],
-    match: (pathname) => pathname.startsWith('/incoming'),
-  },
-  {
-    key: 'recipe-cards',
-    path: '/recipe-cards',
-    title: 'Технологические карты',
-    description: 'Состав продукта: позиции номенклатуры и нормы расхода в граммах.',
-    visibleFor: ['admin', 'manager', 'accounting', 'staff'],
-    match: (pathname) => pathname.startsWith('/recipe-cards'),
-  },
-  {
-    key: 'inventories',
-    path: '/ingredient-inventories',
-    title: 'Текущие остатки',
-    description: 'Сводка текущих остатков позиции номенклатуры (для менеджера).',
-    visibleFor: ['manager'],
-    match: (pathname) => pathname.startsWith('/ingredient-inventories'),
-  },
-  {
-    key: 'cabinet',
-    path: '/cabinet',
-    title: 'Кабинет',
-    description: 'Управление профилем, производством, точками и пользователями.',
-    visibleFor: ['manager'],
-    match: (pathname) => pathname.startsWith('/cabinet'),
-  },
-];
-
-const getAvailableSections = (role) => (
-  SECTION_DEFINITIONS.filter(section => section.visibleFor.includes(role))
-);
-
-const getCurrentSection = (pathname) => (
-  SECTION_DEFINITIONS.find(section => section.match(pathname)) || null
-);
-
-const roleDescription = (role) => {
-  if (role === 'staff') {
-    return (
-      'Ваша роль: staff.\n'
-      + 'Вы заполняете ревизию: продажи, номенклатуру и поступления.\n'
-      + 'В ревизии доступна отправка на проверку менеджеру.'
-    );
-  }
-
-  if (['admin', 'manager', 'accounting'].includes(role)) {
-    return (
-      `Ваша роль: ${role}.\n`
-      + 'Вы можете вести ревизию полностью: заполнять, рассчитывать и подтверждать.\n'
-      + 'Также можно пересчитывать ревизию и управлять рабочими данными.'
-    );
-  }
-
-  return 'Роль не определена. Войдите в систему, чтобы получить персональные подсказки.';
-};
-
-const buildWelcomeMessage = ({ isAuthenticated, role, pathname }) => {
+const getWelcome = (isAuthenticated, role, pathname) => {
   if (!isAuthenticated) {
     return {
-      text:
-        'Я помогу работать в системе ревизий.\n'
-        + 'Сначала войдите в аккаунт, после этого я покажу доступные разделы и шаги.',
+      text: 'Я помогу по системе ревизий. После входа покажу шаги по вашей роли.',
       actions: [],
     };
   }
 
-  const current = getCurrentSection(pathname);
-  const sections = getAvailableSections(role);
+  const currentPage =
+    pathname.startsWith('/incoming') ? 'Поступления'
+      : pathname.startsWith('/recipe-cards') ? 'Технологические карты'
+        : pathname.startsWith('/ingredient-inventories') ? 'Текущие остатки'
+          : pathname.startsWith('/cabinet') ? 'Кабинет'
+            : 'Ревизии';
+
+  const roleTitle = role ? `Роль: ${role}.` : '';
   return {
-    text:
-      'Я ваш ассистент по системе.\n'
-      + (current ? `Сейчас вы на странице: ${current.title}.\n` : '')
-      + 'Спросите: "что делать на этой странице", "права роли", "как провести ревизию".',
-    actions: sections.slice(0, 3).map(section => ({
-      label: section.title,
-      path: section.path,
-    })),
+    text: `Я ИИ-ассистент Product Revision. ${roleTitle}\nТекущая страница: ${currentPage}.`,
+    actions: [{ label: 'Ревизии', path: '/' }],
   };
 };
 
-const buildCurrentPageHelp = ({ role, pathname }) => {
-  const current = getCurrentSection(pathname);
-  if (!current) {
+const localFallback = (question, role) => {
+  const text = (question || '').toLowerCase();
+  if (text.includes('раздел') || text.includes('доступ')) {
     return {
-      text: 'Сейчас открыта служебная страница. Перейдите в рабочий раздел через кнопки ниже.',
-      actions: getAvailableSections(role).slice(0, 4).map(section => ({ label: section.title, path: section.path })),
-    };
-  }
-
-  if (current.key === 'revisions') {
-    return {
-      text:
-        'Ревизии:\n'
-        + '1) Создайте ревизию и заполните продажи.\n'
-        + '2) Заполните номенклатуру и при необходимости поступления.\n'
-        + '3) Выполните расчет ревизии и проверьте отчет.',
+      text: 'Не удалось подключиться к ИИ. Базовые разделы: Ревизии, Поступления, Технологические карты.',
       actions: [
-        { label: 'Список ревизий', path: '/' },
-        { label: 'Новая ревизия', path: '/revisions/new' },
+        { label: 'Ревизии', path: '/' },
+        { label: 'Поступления', path: '/incoming' },
+        { label: 'Технологические карты', path: '/recipe-cards' },
       ],
     };
   }
 
-  if (current.key === 'incoming') {
+  if (role === 'manager') {
     return {
-      text:
-        'Поступления:\n'
-        + 'Вносите количество в граммах, указывайте точку и дату.\n'
-        + 'Эти данные участвуют в расчете остатков и отчета по ревизии.',
-      actions: [{ label: 'Открыть ревизии', path: '/' }],
-    };
-  }
-
-  if (current.key === 'recipe-cards') {
-    return {
-      text:
-        'Технологические карты:\n'
-        + 'Для каждого продукта задайте позиции номенклатуры и расход в граммах.\n'
-        + 'Эти нормы используются в расчете ожидаемых остатков.',
-      actions: [{ label: 'Открыть ревизии', path: '/' }],
-    };
-  }
-
-  if (current.key === 'inventories') {
-    return {
-      text:
-        'Текущие остатки:\n'
-        + 'Показывают актуальные отклонения по позициям номенклатуры.\n'
-        + 'Используйте фильтры и переходите в ревизию для детальной проверки.',
-      actions: [{ label: 'Список ревизий', path: '/' }],
-    };
-  }
-
-  if (current.key === 'cabinet') {
-    return {
-      text:
-        'Кабинет менеджера:\n'
-        + 'Здесь редактируется профиль/производство, точки и пользователи.\n'
-        + 'Создавайте сотрудников staff/accounting и поддерживайте структуру производства.',
-      actions: [{ label: 'Список ревизий', path: '/' }],
-    };
-  }
-
-  return {
-    text: `${current.title}: ${current.description}`,
-    actions: [],
-  };
-};
-
-const buildReply = ({ question, isAuthenticated, role, pathname }) => {
-  const normalized = question.trim().toLowerCase();
-
-  if (!isAuthenticated) {
-    return {
-      text:
-        'Для персональных подсказок нужно войти в аккаунт.\n'
-        + 'После входа я покажу доступные вам разделы и действия.',
-      actions: [],
-    };
-  }
-
-  if (!normalized) {
-    return buildCurrentPageHelp({ role, pathname });
-  }
-
-  if (normalized.includes('что делать') || normalized.includes('эта страниц') || normalized.includes('этой страниц')) {
-    return buildCurrentPageHelp({ role, pathname });
-  }
-
-  if (normalized.includes('прав') || normalized.includes('роль') || normalized.includes('могу')) {
-    return {
-      text: roleDescription(role),
-      actions: getAvailableSections(role).slice(0, 4).map(section => ({ label: section.title, path: section.path })),
-    };
-  }
-
-  if (normalized.includes('доступ') || normalized.includes('раздел') || normalized.includes('ссылк') || normalized.includes('страниц')) {
-    const sections = getAvailableSections(role);
-    return {
-      text:
-        'Доступные разделы:\n'
-        + sections.map((section, index) => `${index + 1}) ${section.title} — ${section.description}`).join('\n'),
-      actions: sections.map(section => ({ label: section.title, path: section.path })),
-    };
-  }
-
-  if (normalized.includes('ревиз')) {
-    return {
-      text:
-        'Как провести ревизию:\n'
-        + '1) Создайте ревизию и заполните продажи.\n'
-        + '2) Заполните фактическую номенклатуру и поступления.\n'
-        + '3) Нажмите "Рассчитать ревизию", проверьте отчет и подтвердите.',
+      text: 'ИИ временно недоступен. Вы можете работать через Ревизии, Поступления, Технологические карты и Кабинет.',
       actions: [
-        { label: 'Список ревизий', path: '/' },
-        { label: 'Создать ревизию', path: '/revisions/new' },
+        { label: 'Ревизии', path: '/' },
+        { label: 'Кабинет', path: '/cabinet' },
       ],
     };
   }
 
-  if (normalized.includes('поступлен')) {
-    return {
-      text:
-        'Поступления вносятся в граммах и учитываются в остатках.\n'
-        + 'Их можно вести отдельно на странице "Поступления" или внутри конкретной ревизии.',
-      actions: [{ label: 'Поступления', path: '/incoming' }, { label: 'Ревизии', path: '/' }],
-    };
-  }
-
-  if (normalized.includes('тех') || normalized.includes('карт') || normalized.includes('рецепт')) {
-    return {
-      text:
-        'Технологическая карта определяет расход позиций номенклатуры на 1 продукт.\n'
-        + 'Проверьте, что нормы указаны в граммах и соответствуют фактическому производству.',
-      actions: [{ label: 'Технологические карты', path: '/recipe-cards' }],
-    };
-  }
-
-  if (normalized.includes('остат') || normalized.includes('склад')) {
-    if (role !== 'manager') {
-      return {
-        text:
-          'Раздел "Текущие остатки" доступен роли manager.\n'
-          + 'Для сверки используйте отчет внутри ревизии.',
-        actions: [{ label: 'Ревизии', path: '/' }],
-      };
-    }
-    return {
-      text: 'Откройте раздел "Текущие остатки", чтобы увидеть отклонения по номенклатуре.',
-      actions: [{ label: 'Текущие остатки', path: '/ingredient-inventories' }],
-    };
-  }
-
-  if (normalized.includes('кабинет') || normalized.includes('пользоват') || normalized.includes('сотрудник') || normalized.includes('профил')) {
-    if (role !== 'manager') {
-      return {
-        text: 'Кабинет управления доступен роли manager.',
-        actions: [{ label: 'Ревизии', path: '/' }],
-      };
-    }
-    return {
-      text:
-        'В кабинете менеджера можно редактировать профиль и производство,\n'
-        + 'управлять точками и пользователями (создание/редактирование/удаление).',
-      actions: [{ label: 'Кабинет', path: '/cabinet' }],
-    };
-  }
-
   return {
-    text:
-      'Я пока не понял запрос полностью.\n'
-      + 'Попробуйте: "что делать на этой странице", "как провести ревизию", "права роли", "доступные разделы".',
-    actions: getAvailableSections(role).slice(0, 4).map(section => ({ label: section.title, path: section.path })),
+    text: 'ИИ временно недоступен. Повторите запрос позже или перейдите в раздел Ревизии.',
+    actions: [{ label: 'Ревизии', path: '/' }],
   };
 };
 
 export const AssistantWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [question, setQuestion] = useState('');
+  const [loading, setLoading] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [messages, setMessages] = useState([]);
+
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-
   const role = user?.role || null;
+
   const welcome = useMemo(
-    () => buildWelcomeMessage({ isAuthenticated, role, pathname: location.pathname }),
+    () => getWelcome(isAuthenticated, role, location.pathname),
     [isAuthenticated, role, location.pathname]
   );
-
-  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
     if (!hasUserInteracted) {
@@ -452,28 +239,59 @@ export const AssistantWidget = () => {
     }
   }, [welcome, hasUserInteracted]);
 
-  const ask = (text) => {
+  const ask = async (rawQuestion) => {
+    const text = (rawQuestion || '').trim();
+    if (!text || loading) return;
+
     setHasUserInteracted(true);
     const userMessage = { id: Date.now(), role: 'user', text };
-    const reply = buildReply({
-      question: text,
-      isAuthenticated,
-      role,
-      pathname: location.pathname,
-    });
-    const assistantMessage = {
-      id: Date.now() + 1,
-      role: 'assistant',
-      text: reply.text,
-      actions: reply.actions || [],
-    };
-    setMessages(prev => [...prev, userMessage, assistantMessage]);
+    const historyForApi = [...messages, userMessage]
+      .slice(-10)
+      .map(msg => ({ role: msg.role, text: msg.text }));
+
+    setMessages(prev => [...prev, userMessage]);
     setQuestion('');
+    setLoading(true);
+
+    try {
+      const response = await assistantAPI.chat({
+        message: text,
+        history: historyForApi,
+        context: {
+          pathname: location.pathname,
+          title: document.title,
+        },
+      });
+
+      const payload = response.data || {};
+      const assistantMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        text: typeof payload.text === 'string' && payload.text.trim()
+          ? payload.text.trim()
+          : 'Не получилось сформировать ответ. Сформулируйте вопрос иначе.',
+        actions: Array.isArray(payload.actions) ? payload.actions : [],
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      const fallback = localFallback(text, role);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: 'assistant',
+          text: fallback.text,
+          actions: fallback.actions || [],
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    ask(question);
+    await ask(question);
   };
 
   return (
@@ -482,8 +300,8 @@ export const AssistantWidget = () => {
         <Panel>
           <Header>
             <div>
-              <HeaderTitle>🤖 Ассистент</HeaderTitle>
-              <HeaderMeta>Подсказки по работе в системе</HeaderMeta>
+              <HeaderTitle>🤖 ИИ-ассистент</HeaderTitle>
+              <HeaderMeta>Навигация и помощь по работе</HeaderMeta>
             </div>
             <CloseButton type="button" onClick={() => setIsOpen(false)}>×</CloseButton>
           </Header>
@@ -492,7 +310,7 @@ export const AssistantWidget = () => {
             {messages.map(message => (
               <div key={message.id}>
                 <Bubble role={message.role}>{message.text}</Bubble>
-                {message.role === 'assistant' && message.actions && message.actions.length > 0 && (
+                {message.role === 'assistant' && Array.isArray(message.actions) && message.actions.length > 0 && (
                   <Actions>
                     {message.actions.map(action => (
                       <ActionButton
@@ -508,12 +326,17 @@ export const AssistantWidget = () => {
               </div>
             ))}
 
+            {loading && (
+              <Bubble role="assistant">Думаю над ответом...</Bubble>
+            )}
+
             <Actions>
               {QUICK_PROMPTS.map(prompt => (
                 <ActionButton
                   key={prompt}
                   type="button"
                   onClick={() => ask(prompt)}
+                  disabled={loading}
                 >
                   {prompt}
                 </ActionButton>
@@ -525,9 +348,12 @@ export const AssistantWidget = () => {
             <Input
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Задайте вопрос по работе с системой..."
+              placeholder="Спросите: что делать дальше?"
+              disabled={loading}
             />
-            <SendButton type="submit">Отправить</SendButton>
+            <SendButton type="submit" disabled={loading || !question.trim()}>
+              {loading ? '...' : 'Отправить'}
+            </SendButton>
           </Composer>
         </Panel>
       )}

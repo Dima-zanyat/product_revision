@@ -17,7 +17,7 @@ from products.viewsets import ProductViewSet, IngredientViewSet, RecipeItemViewS
 from users.views import login_view, logout_view, current_user, csrf_token, register_manager
 from users.viewsets import UserViewSet, ProductionViewSet, ProductionInviteViewSet
 from revisions.views import upload_excel_products
-from core.views import spa
+from core.views import spa, assistant_chat
 
 # Создать router для API
 router = DefaultRouter()
@@ -52,6 +52,7 @@ urlpatterns = [
     path('api/auth/me/', current_user, name='current_user'),
     path('api/auth/csrf/', csrf_token, name='csrf_token'),
     path('api/auth/register/', register_manager, name='register_manager'),
+    path('api/assistant/chat/', assistant_chat, name='assistant_chat'),
     path(
         'api/revision-product-items/upload-excel/',
         upload_excel_products,
