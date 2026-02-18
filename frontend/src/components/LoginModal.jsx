@@ -7,7 +7,7 @@ import styled from 'styled-components';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../styles/theme';
 import { Modal } from './Modal';
-import { Input, Label, FormGroup } from './Input';
+import { Input, Label, FormGroup, PasswordInput } from './Input';
 import { Button } from './Button';
 
 const LoginForm = styled.form`
@@ -108,8 +108,7 @@ export const LoginModal = ({ isOpen, onClose, required = false }) => {
 
         <FormGroup>
           <Label>Пароль</Label>
-          <Input
-            type="password"
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Введите пароль"

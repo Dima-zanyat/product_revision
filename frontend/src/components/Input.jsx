@@ -2,6 +2,7 @@
  * Input компонент
  */
 
+import { useState } from 'react';
 import styled from 'styled-components';
 import { theme } from '../styles/theme';
 
@@ -81,3 +82,53 @@ export const Label = styled.label`
 export const FormGroup = styled.div`
   margin-bottom: ${theme.spacing.md};
 `;
+
+const PasswordWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+const PasswordField = styled(Input)`
+  padding-right: 96px;
+`;
+
+const PasswordToggle = styled.button`
+  position: absolute;
+  top: 50%;
+  right: ${theme.spacing.sm};
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: ${theme.colors.primary};
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+`;
+
+export const PasswordInput = ({ disabled, ...props }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <PasswordWrapper>
+      <PasswordField
+        {...props}
+        type={isVisible ? 'text' : 'password'}
+        disabled={disabled}
+      />
+      <PasswordToggle
+        type="button"
+        onClick={() => setIsVisible((prev) => !prev)}
+        disabled={disabled}
+        aria-label={isVisible ? 'Скрыть пароль' : 'Показать пароль'}
+      >
+        {isVisible ? 'Скрыть' : 'Показать'}
+      </PasswordToggle>
+    </PasswordWrapper>
+  );
+};

@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
 import { Button, ButtonGroup } from '../components/Button';
 import { Table, TableHeader, TableHeaderCell, TableBody, TableRow, TableCell, TableContainer } from '../components/Table';
 import { Modal } from '../components/Modal';
-import { Input, Label, FormGroup, Select } from '../components/Input';
+import { Input, Label, FormGroup, Select, PasswordInput } from '../components/Input';
 import { theme } from '../styles/theme';
 
 export const ManagerCabinetPage = () => {
@@ -287,8 +287,7 @@ export const ManagerCabinetPage = () => {
           </FormGroup>
           <FormGroup>
             <Label>Новый пароль (если нужно)</Label>
-            <Input
-              type="password"
+            <PasswordInput
               value={profileForm.password || ''}
               onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
             />
@@ -503,8 +502,7 @@ export const ManagerCabinetPage = () => {
           </FormGroup>
           <FormGroup>
             <Label>{editingUser ? 'Новый пароль (если нужно)' : 'Пароль'}</Label>
-            <Input
-              type="password"
+            <PasswordInput
               value={userForm.password}
               onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
               required={!editingUser}

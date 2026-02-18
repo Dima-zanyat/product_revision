@@ -7,7 +7,7 @@ import { useParams } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
 import { Button } from '../components/Button';
-import { Input, Label, FormGroup } from '../components/Input';
+import { Input, Label, FormGroup, PasswordInput } from '../components/Input';
 import { theme } from '../styles/theme';
 
 export const ProductionRegisterPage = () => {
@@ -70,8 +70,7 @@ export const ProductionRegisterPage = () => {
           </FormGroup>
           <FormGroup>
             <Label>Пароль</Label>
-            <Input
-              type="password"
+            <PasswordInput
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
