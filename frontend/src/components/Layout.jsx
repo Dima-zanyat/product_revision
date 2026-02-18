@@ -8,6 +8,7 @@ import styled from 'styled-components';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/authStore';
 import { Button, ButtonGroup } from './Button';
+import { AssistantWidget } from './AssistantWidget';
 import { LoginModal } from './LoginModal';
 
 const Header = styled.header`
@@ -153,6 +154,7 @@ export const Layout = ({ children }) => {
       <Main>
         <Container>{children}</Container>
       </Main>
+      <AssistantWidget />
       <LoginModal 
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)} 
