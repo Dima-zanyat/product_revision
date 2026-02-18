@@ -268,6 +268,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={profileForm.first_name || ''}
               onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
+              placeholder="Введите имя"
             />
           </FormGroup>
           <FormGroup>
@@ -275,6 +276,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={profileForm.last_name || ''}
               onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
+              placeholder="Введите фамилию"
             />
           </FormGroup>
           <FormGroup>
@@ -283,6 +285,7 @@ export const ManagerCabinetPage = () => {
               type="email"
               value={profileForm.email || ''}
               onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+              placeholder="example@mail.com"
             />
           </FormGroup>
           <FormGroup>
@@ -290,6 +293,7 @@ export const ManagerCabinetPage = () => {
             <PasswordInput
               value={profileForm.password || ''}
               onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
+              placeholder="Введите новый пароль"
             />
           </FormGroup>
           <Button variant="primary" onClick={handleSaveProfile}>
@@ -308,6 +312,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={productionForm.name || ''}
               onChange={(e) => setProductionForm({ ...productionForm, name: e.target.value })}
+              placeholder="Например: Пекарня Любимая"
             />
           </FormGroup>
           <FormGroup>
@@ -315,6 +320,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={productionForm.city || ''}
               onChange={(e) => setProductionForm({ ...productionForm, city: e.target.value })}
+              placeholder="Например: Москва"
             />
           </FormGroup>
           <FormGroup>
@@ -322,6 +328,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={productionForm.legal_name || ''}
               onChange={(e) => setProductionForm({ ...productionForm, legal_name: e.target.value })}
+              placeholder="Например: ИП Иванов И.И."
             />
           </FormGroup>
           <FormGroup>
@@ -329,6 +336,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={productionForm.inn || ''}
               onChange={(e) => setProductionForm({ ...productionForm, inn: e.target.value })}
+              placeholder="10 или 12 цифр"
             />
           </FormGroup>
           <Button variant="primary" onClick={handleSaveProduction}>
@@ -463,6 +471,7 @@ export const ManagerCabinetPage = () => {
               value={userForm.username}
               onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
               disabled={Boolean(editingUser)}
+              placeholder="Введите логин"
               required
             />
           </FormGroup>
@@ -483,6 +492,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={userForm.first_name}
               onChange={(e) => setUserForm({ ...userForm, first_name: e.target.value })}
+              placeholder="Введите имя"
             />
           </FormGroup>
           <FormGroup>
@@ -490,6 +500,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={userForm.last_name}
               onChange={(e) => setUserForm({ ...userForm, last_name: e.target.value })}
+              placeholder="Введите фамилию"
             />
           </FormGroup>
           <FormGroup>
@@ -498,6 +509,7 @@ export const ManagerCabinetPage = () => {
               type="email"
               value={userForm.email}
               onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+              placeholder="example@mail.com"
             />
           </FormGroup>
           <FormGroup>
@@ -505,6 +517,7 @@ export const ManagerCabinetPage = () => {
             <PasswordInput
               value={userForm.password}
               onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+              placeholder={editingUser ? 'Введите новый пароль' : 'Введите пароль'}
               required={!editingUser}
             />
           </FormGroup>
@@ -538,6 +551,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={locationForm.title}
               onChange={(e) => setLocationForm({ ...locationForm, title: e.target.value })}
+              placeholder="Например: Точка №1"
               required
             />
           </FormGroup>
@@ -546,6 +560,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={locationForm.code}
               onChange={(e) => setLocationForm({ ...locationForm, code: e.target.value })}
+              placeholder="Уникальный код точки"
               required
             />
           </FormGroup>
@@ -554,6 +569,7 @@ export const ManagerCabinetPage = () => {
             <Input
               value={locationForm.address}
               onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })}
+              placeholder="Введите адрес"
             />
           </FormGroup>
         </form>

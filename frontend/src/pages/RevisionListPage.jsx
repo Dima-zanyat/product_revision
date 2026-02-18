@@ -9,6 +9,7 @@ import { useRevisionStore } from '../store/revisionStore';
 import { theme } from '../styles/theme';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
 import { Button, ButtonGroup } from '../components/Button';
+import { Select } from '../components/Input';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -69,13 +70,11 @@ export const RevisionListPage = () => {
         <Button variant="primary" onClick={() => navigate('/revisions/new')}>
           + Новая ревизия
         </Button>
-        <select 
+        <Select
           value={filter} 
           onChange={e => setFilter(e.target.value)}
           style={{
-            padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-            borderRadius: theme.borderRadius.md,
-            border: `1px solid ${theme.colors.gray}`,
+            width: '220px',
           }}
         >
           <option value="">Все статусы</option>
@@ -83,7 +82,7 @@ export const RevisionListPage = () => {
           <option value="submitted">Отправлена на обработку</option>
           <option value="processing">В обработке</option>
           <option value="completed">Завершена</option>
-        </select>
+        </Select>
       </ButtonGroup>
 
       {loading && <p>Загрузка...</p>}

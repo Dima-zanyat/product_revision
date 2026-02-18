@@ -65,6 +65,7 @@ export const ProductionRegisterPage = () => {
             <Input
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
+              placeholder="Введите логин"
               required
             />
           </FormGroup>
@@ -73,6 +74,7 @@ export const ProductionRegisterPage = () => {
             <PasswordInput
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="Введите пароль"
               required
             />
           </FormGroup>
@@ -81,6 +83,7 @@ export const ProductionRegisterPage = () => {
             <Input
               value={form.first_name}
               onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+              placeholder="Введите имя"
             />
           </FormGroup>
           <FormGroup>
@@ -88,6 +91,7 @@ export const ProductionRegisterPage = () => {
             <Input
               value={form.last_name}
               onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+              placeholder="Введите фамилию"
             />
           </FormGroup>
           <FormGroup>
@@ -96,6 +100,7 @@ export const ProductionRegisterPage = () => {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="example@mail.com"
             />
           </FormGroup>
 
@@ -105,6 +110,7 @@ export const ProductionRegisterPage = () => {
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Например: Пекарня Любимая"
               required
             />
           </FormGroup>
@@ -113,6 +119,7 @@ export const ProductionRegisterPage = () => {
             <Input
               value={form.city}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
+              placeholder="Например: Москва"
               required
             />
           </FormGroup>
@@ -121,6 +128,7 @@ export const ProductionRegisterPage = () => {
             <Input
               value={form.legal_name}
               onChange={(e) => setForm({ ...form, legal_name: e.target.value })}
+              placeholder="Например: ИП Иванов И.И."
               required
             />
           </FormGroup>
@@ -129,6 +137,7 @@ export const ProductionRegisterPage = () => {
             <Input
               value={form.inn}
               onChange={(e) => setForm({ ...form, inn: e.target.value })}
+              placeholder="10 или 12 цифр"
             />
           </FormGroup>
           <Button variant="primary" disabled={loading}>

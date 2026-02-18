@@ -776,20 +776,18 @@ export const RevisionDetailPage = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
             <SectionTitle>Отчет по ревизии</SectionTitle>
             <ButtonGroup>
-              <select 
+              <Select
                 value={reportFilter} 
                 onChange={e => setReportFilter(e.target.value)}
                 style={{
-                  padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-                  borderRadius: theme.borderRadius.md,
-                  border: `1px solid ${theme.colors.gray}`,
+                  width: '180px',
                 }}
               >
                 <option value="">Все статусы</option>
                 <option value="critical">🔴 Критично</option>
                 <option value="warning">⚠️ Внимание</option>
                 <option value="ok">✅ Норма</option>
-              </select>
+              </Select>
               {currentRevision.reports && currentRevision.reports.length > 0 && (
                 <Button 
                   variant="primary" 
@@ -898,6 +896,7 @@ export const RevisionDetailPage = () => {
               min="0"
               value={formData.actual_quantity || ''}
               onChange={(e) => setFormData({ ...formData, actual_quantity: parseInt(e.target.value) })}
+              placeholder="Введите количество проданных единиц"
               required
             />
           </FormGroup>
@@ -906,6 +905,7 @@ export const RevisionDetailPage = () => {
             <Textarea
               value={formData.comments || ''}
               onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
+              placeholder="Комментарий к позиции (необязательно)"
             />
           </FormGroup>
         </form>
@@ -965,6 +965,7 @@ export const RevisionDetailPage = () => {
               min="0"
               value={formData.actual_quantity || ''}
               onChange={(e) => setFormData({ ...formData, actual_quantity: parseFloat(e.target.value) })}
+              placeholder="Введите фактический остаток"
               required
             />
           </FormGroup>
@@ -973,6 +974,7 @@ export const RevisionDetailPage = () => {
             <Textarea
               value={formData.comments || ''}
               onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
+              placeholder="Комментарий к позиции (необязательно)"
             />
           </FormGroup>
         </form>
@@ -1032,6 +1034,7 @@ export const RevisionDetailPage = () => {
               min="0"
               value={incomingFormData.quantity || ''}
               onChange={(e) => setIncomingFormData({ ...incomingFormData, quantity: parseFloat(e.target.value) })}
+              placeholder="Введите количество поступления"
               required
             />
           </FormGroup>
@@ -1041,6 +1044,7 @@ export const RevisionDetailPage = () => {
               type="date"
               value={incomingFormData.date || currentRevision.revision_date}
               onChange={(e) => setIncomingFormData({ ...incomingFormData, date: e.target.value })}
+              placeholder="Выберите дату"
               required
             />
           </FormGroup>
@@ -1049,6 +1053,7 @@ export const RevisionDetailPage = () => {
             <Textarea
               value={incomingFormData.comment || ''}
               onChange={(e) => setIncomingFormData({ ...incomingFormData, comment: e.target.value })}
+              placeholder="Комментарий к поступлению (необязательно)"
             />
           </FormGroup>
         </form>

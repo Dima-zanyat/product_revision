@@ -137,6 +137,7 @@ export const RevisionCreatePage = () => {
                 type="date"
                 value={formData.revision_date}
                 onChange={(e) => setFormData({ ...formData, revision_date: e.target.value })}
+                placeholder="Выберите дату ревизии"
                 required
               />
             </FormGroup>

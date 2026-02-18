@@ -10,9 +10,18 @@ export const Input = styled.input`
   width: 100%;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   border: 1px solid ${theme.colors.gray};
+  background-color: ${theme.colors.lightGray};
   border-radius: ${theme.borderRadius.md};
   font-size: 14px;
   transition: all 0.3s ease;
+
+  &::placeholder {
+    color: ${theme.colors.textLight};
+  }
+
+  &:hover {
+    border-color: ${theme.colors.primary};
+  }
   
   &:focus {
     outline: none;
@@ -30,12 +39,21 @@ export const Textarea = styled.textarea`
   width: 100%;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   border: 1px solid ${theme.colors.gray};
+  background-color: ${theme.colors.lightGray};
   border-radius: ${theme.borderRadius.md};
   font-size: 14px;
   min-height: 100px;
   resize: vertical;
   transition: all 0.3s ease;
   font-family: inherit;
+
+  &::placeholder {
+    color: ${theme.colors.textLight};
+  }
+
+  &:hover {
+    border-color: ${theme.colors.primary};
+  }
   
   &:focus {
     outline: none;
@@ -55,9 +73,13 @@ export const Select = styled.select`
   border: 1px solid ${theme.colors.gray};
   border-radius: ${theme.borderRadius.md};
   font-size: 14px;
-  background-color: white;
+  background-color: ${theme.colors.lightGray};
   cursor: pointer;
   transition: all 0.3s ease;
+
+  &:hover {
+    border-color: ${theme.colors.primary};
+  }
   
   &:focus {
     outline: none;

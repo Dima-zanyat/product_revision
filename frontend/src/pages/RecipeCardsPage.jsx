@@ -537,6 +537,7 @@ export const RecipeCardsPage = () => {
               min="0"
               value={formData.quantity || ''}
               onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
+              placeholder="Введите количество"
               required
             />
           </FormGroup>
@@ -600,6 +601,7 @@ export const RecipeCardsPage = () => {
                   min="0"
                   value={row.quantity}
                   onChange={(e) => handleDraftQuantityChange(index, e.target.value)}
+                  placeholder="Количество"
                   required
                 />
               </FormGroup>

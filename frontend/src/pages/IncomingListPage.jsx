@@ -147,6 +147,7 @@ export const IncomingListPage = () => {
                 type="date"
                 value={filters.date_from}
                 onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
+                placeholder="Начало периода"
               />
             </FormGroup>
             <FormGroup>
@@ -155,6 +156,7 @@ export const IncomingListPage = () => {
                 type="date"
                 value={filters.date_to}
                 onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
+                placeholder="Конец периода"
               />
             </FormGroup>
             <ButtonGroup style={{ alignItems: 'flex-end' }}>
@@ -263,6 +265,7 @@ export const IncomingListPage = () => {
               min="0"
               value={formData.quantity || ''}
               onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
+              placeholder="Введите количество"
               required
             />
           </FormGroup>
@@ -285,6 +288,7 @@ export const IncomingListPage = () => {
               type="date"
               value={formData.date || ''}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              placeholder="Выберите дату поступления"
               required
             />
           </FormGroup>
@@ -293,6 +297,7 @@ export const IncomingListPage = () => {
             <Textarea
               value={formData.comment || ''}
               onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+              placeholder="Добавьте комментарий (необязательно)"
             />
           </FormGroup>
         </form>
