@@ -664,7 +664,7 @@ export const RevisionDetailPage = () => {
               <TableHeader>
                 <tr>
                   <TableHeaderCell>Позиция номенкулатуры</TableHeaderCell>
-                  <TableHeaderCell>Количество</TableHeaderCell>
+                  <TableHeaderCell>Количество (граммы)</TableHeaderCell>
                   <TableHeaderCell>Ед. изм.</TableHeaderCell>
                   <TableHeaderCell>Комментарии</TableHeaderCell>
                   {canEditItems && (
@@ -726,7 +726,7 @@ export const RevisionDetailPage = () => {
                 <TableHeader>
                   <tr>
                     <TableHeaderCell>Позиция номенкулатуры</TableHeaderCell>
-                    <TableHeaderCell>Количество</TableHeaderCell>
+                    <TableHeaderCell>Количество (граммы)</TableHeaderCell>
                     <TableHeaderCell>Ед. изм.</TableHeaderCell>
                     <TableHeaderCell>Дата</TableHeaderCell>
                     <TableHeaderCell>Комментарии</TableHeaderCell>
@@ -958,14 +958,14 @@ export const RevisionDetailPage = () => {
             </datalist>
           </FormGroup>
           <FormGroup>
-            <Label>Количество</Label>
+            <Label>Количество (граммы)</Label>
             <Input
               type="number"
               step="0.001"
               min="0"
               value={formData.actual_quantity || ''}
               onChange={(e) => setFormData({ ...formData, actual_quantity: parseFloat(e.target.value) })}
-              placeholder="Введите фактический остаток"
+              placeholder="Введите фактический остаток в граммах"
               required
             />
           </FormGroup>
@@ -1027,14 +1027,14 @@ export const RevisionDetailPage = () => {
             </datalist>
           </FormGroup>
           <FormGroup>
-            <Label>Количество</Label>
+            <Label>Количество (граммы)</Label>
             <Input
               type="number"
               step="0.001"
               min="0"
               value={incomingFormData.quantity || ''}
               onChange={(e) => setIncomingFormData({ ...incomingFormData, quantity: parseFloat(e.target.value) })}
-              placeholder="Введите количество поступления"
+              placeholder="Введите количество поступления в граммах"
               required
             />
           </FormGroup>

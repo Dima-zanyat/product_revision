@@ -437,7 +437,7 @@ export const RecipeCardsPage = () => {
                     <TableHeader>
                       <tr>
                         <TableHeaderCell>Позиция номенкулатуры</TableHeaderCell>
-                        <TableHeaderCell>Количество</TableHeaderCell>
+                        <TableHeaderCell>Количество (граммы)</TableHeaderCell>
                         <TableHeaderCell>Ед. изм.</TableHeaderCell>
                         {canEdit && <TableHeaderCell>Действия</TableHeaderCell>}
                       </tr>
@@ -530,14 +530,14 @@ export const RecipeCardsPage = () => {
             </datalist>
           </FormGroup>
           <FormGroup>
-            <Label>Количество</Label>
+            <Label>Количество (граммы)</Label>
             <Input
               type="number"
               step="0.001"
               min="0"
               value={formData.quantity || ''}
               onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
-              placeholder="Введите количество"
+              placeholder="Введите количество в граммах"
               required
             />
           </FormGroup>
@@ -594,14 +594,14 @@ export const RecipeCardsPage = () => {
                 />
               </FormGroup>
               <FormGroup style={{ width: 160 }}>
-                <Label>Количество</Label>
+                <Label>Количество (граммы)</Label>
                 <Input
                   type="number"
                   step="0.001"
                   min="0"
                   value={row.quantity}
                   onChange={(e) => handleDraftQuantityChange(index, e.target.value)}
-                  placeholder="Количество"
+                  placeholder="Количество в граммах"
                   required
                 />
               </FormGroup>

@@ -174,7 +174,7 @@ export const IncomingListPage = () => {
                 <TableHeader>
                   <tr>
                     <TableHeaderCell>Позиция номенкулатуры</TableHeaderCell>
-                    <TableHeaderCell>Количество</TableHeaderCell>
+                    <TableHeaderCell>Количество (граммы)</TableHeaderCell>
                     <TableHeaderCell>Ед. изм.</TableHeaderCell>
                     <TableHeaderCell>Точка</TableHeaderCell>
                     <TableHeaderCell>Дата</TableHeaderCell>
@@ -258,14 +258,14 @@ export const IncomingListPage = () => {
             </Select>
           </FormGroup>
           <FormGroup>
-            <Label>Количество</Label>
+            <Label>Количество (граммы)</Label>
             <Input
               type="number"
               step="0.001"
               min="0"
               value={formData.quantity || ''}
               onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
-              placeholder="Введите количество"
+              placeholder="Введите количество в граммах"
               required
             />
           </FormGroup>
