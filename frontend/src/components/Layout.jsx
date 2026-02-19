@@ -86,6 +86,7 @@ export const Layout = ({ children }) => {
   const isRecipeCards = location.pathname.startsWith('/recipe-cards');
   const isCabinet = location.pathname.startsWith('/cabinet');
   const isRevisions = location.pathname === '/' || location.pathname.startsWith('/revisions');
+  const isHowItWorks = location.pathname.startsWith('/how-it-works');
 
   return (
     <>
@@ -123,6 +124,12 @@ export const Layout = ({ children }) => {
                   onClick={() => navigate('/recipe-cards')}
                 >
                   Технологические карты
+                </Button>
+                <Button
+                  variant={isHowItWorks ? 'primary' : 'default'}
+                  onClick={() => navigate('/how-it-works')}
+                >
+                  Как это работает
                 </Button>
                 {user?.role === 'manager' && (
                   <Button
