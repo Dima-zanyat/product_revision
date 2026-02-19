@@ -99,7 +99,7 @@ class ProductionInvite(models.Model):
     )
     production = models.ForeignKey(
         Production,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name='invites',
@@ -134,7 +134,7 @@ class User(AbstractUser):
     )
     production = models.ForeignKey(
         Production,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name='users',
@@ -142,7 +142,7 @@ class User(AbstractUser):
     )
     created_by = models.ForeignKey(
         'self',
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name='created_users',

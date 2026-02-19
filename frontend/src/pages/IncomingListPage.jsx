@@ -27,6 +27,7 @@ export const IncomingListPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({});
+  const [ingredientSearch, setIngredientSearch] = useState('');
   const [filters, setFilters] = useState({
     location: '',
     date_from: '',
@@ -75,6 +76,10 @@ export const IncomingListPage = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      if (!formData.ingredient) {
+        alert('Пожалуйста, выберите позицию номенкулатуры из списка');
+        return;
+      }
       const payload = {
         ingredient: formData.ingredient,
         quantity: formData.quantity,
@@ -90,6 +95,7 @@ export const IncomingListPage = () => {
       setShowModal(false);
       setEditing(null);
       setFormData({});
+      setIngredientSearch('');
       fetchIncoming();
     } catch (error) {
       alert('Ошибка при сохранении поступления: ' + (error.response?.data?.detail || error.message));
@@ -105,8 +111,24 @@ export const IncomingListPage = () => {
       date: item.date,
       comment: item.comment || '',
     });
+    setIngredientSearch('');
     setShowModal(true);
   };
+
+  const openCreateModal = () => {
+    setEditing(null);
+    setFormData({});
+    setIngredientSearch('');
+    setShowModal(true);
+  };
+
+  const findIngredientByTitle = (title) => {
+    const normalized = (title || '').trim().toLowerCase();
+    return ingredients.find(i => i.title.toLowerCase() === normalized);
+  };
+
+  const ingredientTitleById = (id) =>
+    ingredients.find(i => String(i.id) === String(id))?.title || '';
 
   const handleDelete = async (id) => {
     if (!window.confirm('Удалить поступление?')) return;
@@ -123,7 +145,7 @@ export const IncomingListPage = () => {
       <Card>
         <CardHeader>
           <CardTitle>Поступления</CardTitle>
-          <Button variant="primary" onClick={() => setShowModal(true)}>
+          <Button variant="primary" onClick={openCreateModal}>
             + Добавить поступление
           </Button>
         </CardHeader>
@@ -226,6 +248,7 @@ export const IncomingListPage = () => {
           setShowModal(false);
           setEditing(null);
           setFormData({});
+          setIngredientSearch('');
         }}
         title={editing ? 'Редактировать поступление' : 'Добавить поступление'}
         footer={
@@ -234,6 +257,7 @@ export const IncomingListPage = () => {
               setShowModal(false);
               setEditing(null);
               setFormData({});
+              setIngredientSearch('');
             }}>
               Отмена
             </Button>
@@ -246,16 +270,23 @@ export const IncomingListPage = () => {
         <form onSubmit={handleSave}>
           <FormGroup>
             <Label>Позиция номенкулатуры</Label>
-            <Select
-              value={formData.ingredient || ''}
-              onChange={(e) => setFormData({ ...formData, ingredient: e.target.value })}
+            <Input
+              list="incoming-ingredient-options"
+              value={ingredientSearch || ingredientTitleById(formData.ingredient)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setIngredientSearch(value);
+                const match = findIngredientByTitle(value);
+                setFormData({ ...formData, ingredient: match ? match.id : '' });
+              }}
+              placeholder="Выберите позицию номенкулатуры"
               required
-            >
-              <option value="">Выберите ингредиент</option>
+            />
+            <datalist id="incoming-ingredient-options">
               {ingredients.map(i => (
-                <option key={i.id} value={i.id}>{i.title}</option>
+                <option key={i.id} value={i.title} />
               ))}
-            </Select>
+            </datalist>
           </FormGroup>
           <FormGroup>
             <Label>Количество (граммы)</Label>

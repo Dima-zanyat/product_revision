@@ -292,6 +292,13 @@ export const RevisionDetailPage = () => {
     }
   };
 
+  const openAddIngredientModal = () => {
+    setEditingIngredient(null);
+    setFormData({});
+    setIngredientSearch('');
+    setShowIngredientModal(true);
+  };
+
   const handleAddIngredient = async (e) => {
     e.preventDefault();
     try {
@@ -313,6 +320,7 @@ export const RevisionDetailPage = () => {
       setShowIngredientModal(false);
       setFormData({});
       setEditingIngredient(null);
+      setIngredientSearch('');
       fetchRevision(id);
     } catch (error) {
       alert('Ошибка при сохранении позиции номенклатуры: ' + (error.response?.data?.detail || error.message));
@@ -642,7 +650,7 @@ export const RevisionDetailPage = () => {
       <Section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
-            <SectionTitle>Номенкулатура ({currentRevision.ingredient_items?.length || 0})</SectionTitle>
+            <SectionTitle>Фактический остаток номенкулатуры ({currentRevision.ingredient_items?.length || 0})</SectionTitle>
             {currentRevision.ingredient_items && currentRevision.ingredient_items.length > 5 && (
               <Button 
                 variant="default"
@@ -653,7 +661,7 @@ export const RevisionDetailPage = () => {
             )}
           </div>
           {canEditItems && (
-            <Button variant="primary" onClick={() => setShowIngredientModal(true)}>
+            <Button variant="primary" onClick={openAddIngredientModal}>
               + Добавить позицию
             </Button>
           )}
@@ -708,7 +716,7 @@ export const RevisionDetailPage = () => {
             </Table>
           </TableContainer>
         ) : (
-          <p style={{ color: theme.colors.textLight }}>Номенкулатура не добавлена</p>
+          <p style={{ color: theme.colors.textLight }}>Фактический остаток номенкулатуры не добавлен</p>
         )}
       </Section>
 
