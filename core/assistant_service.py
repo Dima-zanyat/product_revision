@@ -1,14 +1,16 @@
-"""Сервис ассистента: LLM-ответ + локальный fallback."""
+"""Локальный ассистент проекта без внешнего LLM."""
 
-import json
-import logging
+from __future__ import annotations
+
 import re
+from datetime import timedelta
 from typing import Any
 
-import requests
-from django.conf import settings
+from django.utils import timezone
 
-logger = logging.getLogger(__name__)
+from products.models import Ingredient, Product, RecipeItem
+from revisions.models import Revision
+from sales.models import Incoming, IngredientInventory, Location
 
 
 SECTION_DEFINITIONS = [
@@ -16,38 +18,45 @@ SECTION_DEFINITIONS = [
         'key': 'revisions',
         'title': 'Ревизии',
         'path': '/',
-        'description': 'Создание и ведение ревизий, расчет и подтверждение.',
+        'description': 'Создание ревизий, заполнение продаж, номенклатуры, расчет и подтверждение.',
         'visible_for': {'admin', 'manager', 'accounting', 'staff'},
     },
     {
         'key': 'incoming',
         'title': 'Поступления',
         'path': '/incoming',
-        'description': 'Ввод поступлений позиции номенклатуры в граммах.',
+        'description': 'Учет поступлений позиции номенклатуры в граммах.',
         'visible_for': {'admin', 'manager', 'accounting', 'staff'},
     },
     {
         'key': 'recipe-cards',
         'title': 'Технологические карты',
         'path': '/recipe-cards',
-        'description': 'Состав продукта: позиции номенклатуры и расход в граммах.',
+        'description': 'Состав продукта: позиции номенклатуры и нормы расхода в граммах.',
         'visible_for': {'admin', 'manager', 'accounting', 'staff'},
     },
     {
         'key': 'inventories',
         'title': 'Текущие остатки',
         'path': '/ingredient-inventories',
-        'description': 'Сводка отклонений по остаткам (только менеджер).',
+        'description': 'Текущие остатки позиции номенклатуры (для manager).',
         'visible_for': {'manager'},
     },
     {
         'key': 'cabinet',
         'title': 'Кабинет',
         'path': '/cabinet',
-        'description': 'Профиль, производство, точки и сотрудники (только менеджер).',
+        'description': 'Профиль, производство, точки и сотрудники (для manager).',
         'visible_for': {'manager'},
     },
 ]
+
+STATUS_GUIDE = {
+    'draft': 'Черновик — можно заполнять и редактировать.',
+    'submitted': 'Отправлена на обработку — отправлена staff, ожидает действия руководящих ролей.',
+    'processing': 'В обработке — можно считать/пересчитывать и подтверждать.',
+    'completed': 'Завершена — подтверждена, но пересчет ревизии остается доступным.',
+}
 
 
 def _resolve_role(user) -> str | None:
@@ -60,13 +69,18 @@ def _resolve_role(user) -> str | None:
     return None
 
 
+def _is_managerial(role: str | None, user) -> bool:
+    return bool(
+        getattr(user, 'is_superuser', False)
+        or getattr(user, 'is_staff', False)
+        or role in {'admin', 'manager', 'accounting'}
+    )
+
+
 def _available_sections(role: str | None) -> list[dict[str, Any]]:
     if not role:
         return []
-    return [
-        section for section in SECTION_DEFINITIONS
-        if role in section['visible_for']
-    ]
+    return [section for section in SECTION_DEFINITIONS if role in section['visible_for']]
 
 
 def _allowed_paths(role: str | None) -> set[str]:
@@ -83,134 +97,215 @@ def _normalize_history(history: Any) -> list[dict[str, str]]:
     for item in history:
         if not isinstance(item, dict):
             continue
-        role = item.get('role')
+        message_role = item.get('role')
         text = item.get('text')
-        if role not in {'user', 'assistant'}:
+        if message_role not in {'user', 'assistant'}:
             continue
         if not isinstance(text, str) or not text.strip():
             continue
-        normalized.append({'role': role, 'text': text.strip()[:2000]})
+        normalized.append({'role': message_role, 'text': text.strip()[:2000]})
     return normalized
 
 
 def _normalize_actions(actions: Any, role: str | None) -> list[dict[str, str]]:
-    allowed_paths = _allowed_paths(role)
     if not isinstance(actions, list):
         return []
 
-    normalized = []
-    seen = set()
+    allowed_paths = _allowed_paths(role)
+    normalized: list[dict[str, str]] = []
+    seen_paths = set()
     for action in actions:
         if not isinstance(action, dict):
             continue
         label = str(action.get('label', '')).strip()
         path = str(action.get('path', '')).strip()
-        if not label or not path:
-            continue
-        if path not in allowed_paths:
-            continue
-        if path in seen:
+        if not label or not path or path not in allowed_paths or path in seen_paths:
             continue
         normalized.append({'label': label[:60], 'path': path})
-        seen.add(path)
-        if len(normalized) >= 5:
+        seen_paths.add(path)
+        if len(normalized) >= 6:
             break
     return normalized
 
 
-def _extract_json_object(raw_text: str) -> dict[str, Any] | None:
-    text = raw_text.strip()
-    if not text:
-        return None
+def _filter_by_production(queryset, user, relation_path: str | None = None):
+    if getattr(user, 'is_superuser', False):
+        return queryset
 
-    try:
-        parsed = json.loads(text)
-        if isinstance(parsed, dict):
-            return parsed
-    except json.JSONDecodeError:
-        pass
+    production_id = getattr(user, 'production_id', None)
+    if not production_id:
+        return queryset.none()
 
-    match = re.search(r'\{[\s\S]*\}', text)
-    if not match:
-        return None
-    try:
-        parsed = json.loads(match.group(0))
-        if isinstance(parsed, dict):
-            return parsed
-    except json.JSONDecodeError:
-        return None
-    return None
+    field_name = f'{relation_path}__production_id' if relation_path else 'production_id'
+    return queryset.filter(**{field_name: production_id})
 
 
-def _llm_system_prompt(role: str | None, available_sections: list[dict[str, Any]]) -> str:
-    sections_text = '\n'.join(
-        f"- {section['title']} ({section['path']}): {section['description']}"
-        for section in available_sections
-    ) or '- Нет доступных разделов (пользователь не авторизован)'
+def _visible_revisions_queryset(user):
+    queryset = Revision.objects.all()
+    if getattr(user, 'is_superuser', False):
+        return queryset
 
-    return (
-        "Ты ассистент веб-приложения Product Revision.\n"
-        "Отвечай на русском, кратко, по делу.\n"
-        "Не выдумывай функционал и права доступа.\n"
-        "В количестве позиции номенклатуры и поступлений используй единицы: граммы.\n"
-        "Если данных недостаточно, прямо так и скажи.\n\n"
-        f"Текущая роль пользователя: {role or 'не авторизован'}.\n"
-        "Доступные разделы:\n"
-        f"{sections_text}\n\n"
-        "Верни СТРОГО JSON без markdown:\n"
-        "{\n"
-        '  "text": "текст ответа",\n'
-        '  "actions": [{"label": "Название", "path": "/path"}]\n'
-        "}\n"
-        "actions должен содержать только доступные пользователю пути."
-    )
+    production_id = getattr(user, 'production_id', None)
+    if not production_id:
+        return queryset.none()
+
+    queryset = queryset.filter(location__production_id=production_id)
+    if getattr(user, 'role', None) == 'staff':
+        return queryset.filter(author=user, status='draft')
+    return queryset
 
 
-def _build_default_actions(role: str | None, limit: int = 3) -> list[dict[str, str]]:
+def _build_default_actions(role: str | None, limit: int = 4) -> list[dict[str, str]]:
     return [
         {'label': section['title'], 'path': section['path']}
         for section in _available_sections(role)[:limit]
     ]
 
 
-def _current_page_help(pathname: str, role: str | None) -> dict[str, Any]:
-    if pathname.startswith('/incoming'):
-        return {
-            'text': (
-                "Поступления: укажите позицию номенклатуры, количество в граммах, "
-                "точку и дату. Эти данные участвуют в расчете ревизии."
-            ),
-            'actions': [{'label': 'Поступления', 'path': '/incoming'}],
-        }
-    if pathname.startswith('/recipe-cards'):
-        return {
-            'text': (
-                "Технологические карты: для каждого продукта задайте позиции "
-                "номенклатуры и норму расхода в граммах."
-            ),
-            'actions': [{'label': 'Технологические карты', 'path': '/recipe-cards'}],
-        }
-    if pathname.startswith('/ingredient-inventories'):
-        return {
-            'text': (
-                "Текущие остатки: отслеживайте отклонения по позициям номенклатуры "
-                "и переходите в ревизии для детальной сверки."
-            ),
-            'actions': [{'label': 'Ревизии', 'path': '/'}],
-        }
-    if pathname.startswith('/cabinet'):
-        return {
-            'text': (
-                "Кабинет: редактирование профиля и производства, управление точками "
-                "и сотрудниками."
-            ),
-            'actions': [{'label': 'Кабинет', 'path': '/cabinet'}],
-        }
+def _get_revision_snapshot(pathname: str, user) -> dict[str, Any] | None:
+    match = re.match(r'^/revisions/(\d+)$', pathname.strip())
+    if not match:
+        return None
+
+    revision_id = int(match.group(1))
+    revision = _visible_revisions_queryset(user).filter(id=revision_id).first()
+    if not revision:
+        return None
+
+    return {
+        'id': revision.id,
+        'status': revision.status,
+        'status_text': STATUS_GUIDE.get(revision.status, revision.status),
+        'product_items': revision.product_items.count(),
+        'ingredient_items': revision.ingredient_items.count(),
+        'reports': revision.reports.count(),
+        'location_title': getattr(revision.location, 'title', ''),
+        'revision_date': str(revision.revision_date),
+    }
+
+
+def _project_stats(user) -> dict[str, int]:
+    revisions = _visible_revisions_queryset(user)
+    locations = _filter_by_production(Location.objects.all(), user)
+    products = _filter_by_production(Product.objects.all(), user)
+    ingredients = _filter_by_production(Ingredient.objects.all(), user)
+    recipe_items = _filter_by_production(RecipeItem.objects.all(), user, relation_path='product')
+    incoming = _filter_by_production(Incoming.objects.all(), user, relation_path='location')
+    ingredient_inventory = _filter_by_production(
+        IngredientInventory.objects.all(),
+        user,
+        relation_path='location',
+    )
+
+    thirty_days_ago = timezone.now().date() - timedelta(days=30)
+    return {
+        'locations_total': locations.count(),
+        'products_total': products.count(),
+        'ingredients_total': ingredients.count(),
+        'recipe_items_total': recipe_items.count(),
+        'incoming_30d': incoming.filter(date__gte=thirty_days_ago).count(),
+        'ingredient_inventory_total': ingredient_inventory.count(),
+        'revisions_total': revisions.count(),
+        'revisions_draft': revisions.filter(status='draft').count(),
+        'revisions_processing': revisions.filter(status='processing').count(),
+        'revisions_completed': revisions.filter(status='completed').count(),
+    }
+
+
+def _contains_any(text: str, keywords: list[str]) -> bool:
+    return any(keyword in text for keyword in keywords)
+
+
+def _role_permissions_text(role: str | None, user) -> str:
+    if not role:
+        return "Без авторизации доступна только форма входа и регистрация менеджера по токену."
+
+    if role == 'staff':
+        return (
+            "Роль staff:\n"
+            "• В ревизии: заполняет продажи, номенклатуру и поступления.\n"
+            "• Может отправить ревизию на обработку.\n"
+            "• Не подтверждает, не отклоняет, не удаляет ревизии.\n"
+            "• Не редактирует продукты, номенклатуру и технологические карты."
+        )
+
+    if _is_managerial(role, user):
+        extra = "• Для manager дополнительно доступен кабинет и текущие остатки."
+        if role != 'manager':
+            extra = "• Кабинет и текущие остатки доступны только manager."
+        return (
+            f"Роль {role}:\n"
+            "• Полный цикл по ревизии: заполнение, расчет/пересчет, подтверждение.\n"
+            "• Может удалять ревизии.\n"
+            "• Может редактировать продукты, позиции номенклатуры, технологические карты, поступления.\n"
+            f"{extra}"
+        )
+
+    return f"Роль {role}: проверьте доступы в интерфейсе и через менеджера/администратора."
+
+
+def _revision_workflow_text(role: str | None, user) -> str:
+    if role == 'staff':
+        return (
+            "Как работает ревизия для staff:\n"
+            "1) Создайте ревизию и заполните раздел «Продажи» (шт.).\n"
+            "2) Заполните «Номенклатура» и «Поступления» (в граммах).\n"
+            "3) Нажмите «Отправить на обработку»."
+        )
+
+    if _is_managerial(role, user):
+        return (
+            "Как работает ревизия для руководящих ролей:\n"
+            "1) Создайте/откройте ревизию и заполните продажи (шт.).\n"
+            "2) Заполните номенклатуру и поступления (в граммах).\n"
+            "3) Нажмите «Рассчитать ревизию».\n"
+            "4) Проверьте отчет и нажмите «Подтвердить».\n"
+            "5) При необходимости используйте «Пересчитать ревизию» даже в статусе «Завершена»."
+        )
+
+    return "Для начала войдите в систему."
+
+
+def _status_help_text() -> str:
+    return (
+        "Статусы ревизии:\n"
+        f"• draft — {STATUS_GUIDE['draft']}\n"
+        f"• submitted — {STATUS_GUIDE['submitted']}\n"
+        f"• processing — {STATUS_GUIDE['processing']}\n"
+        f"• completed — {STATUS_GUIDE['completed']}"
+    )
+
+
+def _report_help_text() -> str:
+    return (
+        "Отчет по ревизии:\n"
+        "• Ожидаемый остаток = расчет по техкартам и продажам с учетом поступлений.\n"
+        "• Фактический остаток = введенное значение в номенклатуре.\n"
+        "• Разница = факт - ожидаемый.\n"
+        "• Статусы: Норма (0-3%), Внимание (3-10%), Критично (>10%)."
+    )
+
+
+def _current_page_help(pathname: str, role: str | None, user) -> dict[str, Any]:
     if pathname == '/' or pathname.startswith('/revisions'):
+        snapshot = _get_revision_snapshot(pathname, user)
+        if snapshot:
+            return {
+                'text': (
+                    f"Ревизия #{snapshot['id']} ({snapshot['location_title']}, {snapshot['revision_date']}).\n"
+                    f"Статус: {snapshot['status']} — {snapshot['status_text']}\n"
+                    f"Продажи: {snapshot['product_items']}, Номенклатура: {snapshot['ingredient_items']}, Отчетов: {snapshot['reports']}.\n"
+                    "В продажах количество в штуках, в номенклатуре и поступлениях — в граммах."
+                ),
+                'actions': [
+                    {'label': 'Список ревизий', 'path': '/'},
+                    {'label': 'Новая ревизия', 'path': '/revisions/new'},
+                ],
+            }
         return {
             'text': (
-                "Ревизии: создайте ревизию, заполните продажи и номенклатуру, "
-                "выполните расчет, затем подтвердите."
+                "Раздел «Ревизии»: создайте ревизию, внесите продажи (шт.), "
+                "заполните номенклатуру/поступления (граммы), затем рассчитайте и подтвердите."
             ),
             'actions': [
                 {'label': 'Список ревизий', 'path': '/'},
@@ -218,218 +313,248 @@ def _current_page_help(pathname: str, role: str | None) -> dict[str, Any]:
             ],
         }
 
+    if pathname.startswith('/incoming'):
+        return {
+            'text': (
+                "Раздел «Поступления»: здесь фиксируются поступления позиции номенклатуры.\n"
+                "Заполняйте количество в граммах, обязательно выбирайте точку и дату."
+            ),
+            'actions': [{'label': 'Поступления', 'path': '/incoming'}],
+        }
+
+    if pathname.startswith('/recipe-cards'):
+        return {
+            'text': (
+                "Раздел «Технологические карты»: задайте состав продукта.\n"
+                "Каждая позиция номенклатуры указывается в граммах на единицу продукта."
+            ),
+            'actions': [{'label': 'Технологические карты', 'path': '/recipe-cards'}],
+        }
+
+    if pathname.startswith('/ingredient-inventories'):
+        return {
+            'text': (
+                "Раздел «Текущие остатки»: показывает актуальные остатки позиции номенклатуры.\n"
+                "Раздел доступен только manager."
+            ),
+            'actions': [{'label': 'Текущие остатки', 'path': '/ingredient-inventories'}],
+        }
+
+    if pathname.startswith('/cabinet'):
+        return {
+            'text': (
+                "Раздел «Кабинет»: управление профилем, производством, точками и пользователями.\n"
+                "Менеджер может создавать/редактировать/удалять пользователей, которых создал."
+            ),
+            'actions': [{'label': 'Кабинет', 'path': '/cabinet'}],
+        }
+
     return {
-        'text': "Задайте вопрос по текущему разделу, и я подскажу следующий шаг.",
+        'text': "Спросите, что сделать на текущей странице, и я дам пошаговый план.",
         'actions': _build_default_actions(role),
     }
 
 
-def _fallback_reply(message: str, pathname: str, role: str | None, is_authenticated: bool) -> dict[str, Any]:
+def _stats_text(user) -> str:
+    stats = _project_stats(user)
+    return (
+        "Сводка по вашему доступу:\n"
+        f"• Точки: {stats['locations_total']}\n"
+        f"• Продукты: {stats['products_total']}\n"
+        f"• Позиции номенклатуры: {stats['ingredients_total']}\n"
+        f"• Позиции техкарт: {stats['recipe_items_total']}\n"
+        f"• Поступления за 30 дней: {stats['incoming_30d']}\n"
+        f"• Записей текущих остатков: {stats['ingredient_inventory_total']}\n"
+        f"• Ревизии: всего {stats['revisions_total']} (черновик {stats['revisions_draft']}, "
+        f"в обработке {stats['revisions_processing']}, завершено {stats['revisions_completed']})"
+    )
+
+
+def _fallback_reply(
+    *,
+    message: str,
+    pathname: str,
+    role: str | None,
+    is_authenticated: bool,
+    user,
+) -> dict[str, Any]:
     normalized = (message or '').strip().lower()
 
     if not is_authenticated:
         return {
             'text': (
-                "Войдите в аккаунт, чтобы получить подсказки по вашей роли и "
-                "доступным разделам."
+                "Войдите в аккаунт. После входа я буду подсказывать по вашей роли, "
+                "доступным разделам и шагам по ревизии."
             ),
             'actions': [],
-            'source': 'fallback',
+            'source': 'local',
         }
 
-    if (
-        not normalized
-        or 'что делать' in normalized
-        or 'эта страниц' in normalized
-        or 'этой страниц' in normalized
-    ):
-        page_help = _current_page_help(pathname, role)
-        page_help['source'] = 'fallback'
-        page_help['actions'] = _normalize_actions(page_help.get('actions'), role)
-        return page_help
+    if not normalized:
+        reply = _current_page_help(pathname, role, user)
+        reply['actions'] = _normalize_actions(reply.get('actions', []), role)
+        reply['source'] = 'local'
+        return reply
 
-    if 'прав' in normalized or 'роль' in normalized:
-        if role == 'staff':
-            text = (
-                "Роль staff: заполняете ревизию и отправляете на проверку. "
-                "Подтверждение и расчет выполняют руководящие роли."
-            )
-        else:
-            text = (
-                f"Роль {role}: доступно полное ведение ревизии — заполнение, "
-                "расчет, подтверждение и пересчет."
-            )
-        return {
-            'text': text,
-            'actions': _build_default_actions(role, limit=4),
-            'source': 'fallback',
-        }
+    if _contains_any(normalized, ['что делать', 'эта страниц', 'этой страниц', 'куда нажать', 'что дальше']):
+        reply = _current_page_help(pathname, role, user)
+        reply['actions'] = _normalize_actions(reply.get('actions', []), role)
+        reply['source'] = 'local'
+        return reply
 
-    if 'раздел' in normalized or 'доступ' in normalized or 'ссылк' in normalized:
-        sections = _available_sections(role)
-        text = "Доступные разделы:\n" + '\n'.join(
-            f"{idx + 1}) {section['title']} — {section['description']}"
-            for idx, section in enumerate(sections)
-        )
+    if _contains_any(normalized, ['права', 'роль', 'доступ', 'что могу', 'могу ли']):
         return {
-            'text': text,
+            'text': _role_permissions_text(role, user),
             'actions': _build_default_actions(role, limit=5),
-            'source': 'fallback',
+            'source': 'local',
         }
 
-    if 'ревиз' in normalized:
+    if _contains_any(normalized, ['статус', 'черновик', 'submitted', 'processing', 'завершен']):
         return {
-            'text': (
-                "Порядок работы: 1) заполните продажи, 2) внесите номенклатуру "
-                "и поступления, 3) рассчитайте ревизию, 4) подтвердите результат."
-            ),
+            'text': _status_help_text(),
+            'actions': [{'label': 'Ревизии', 'path': '/'}],
+            'source': 'local',
+        }
+
+    if _contains_any(normalized, ['ревиз', 'расчет', 'пересчет', 'подтверд', 'отправ']):
+        return {
+            'text': _revision_workflow_text(role, user),
             'actions': _normalize_actions(
                 [
                     {'label': 'Список ревизий', 'path': '/'},
                     {'label': 'Новая ревизия', 'path': '/revisions/new'},
                 ],
-                role
+                role,
             ),
-            'source': 'fallback',
+            'source': 'local',
+        }
+
+    if _contains_any(normalized, ['отчет', 'критично', 'внимание', 'норма', 'разница', 'ожидаем']):
+        return {
+            'text': _report_help_text(),
+            'actions': [{'label': 'Ревизии', 'path': '/'}],
+            'source': 'local',
+        }
+
+    if _contains_any(normalized, ['поступлен', 'приход']):
+        return {
+            'text': (
+                "Поступления фиксируются по позиции номенклатуры, точке и дате.\n"
+                "Количество всегда вводится в граммах."
+            ),
+            'actions': _normalize_actions(
+                [
+                    {'label': 'Поступления', 'path': '/incoming'},
+                    {'label': 'Ревизии', 'path': '/'},
+                ],
+                role,
+            ),
+            'source': 'local',
+        }
+
+    if _contains_any(normalized, ['тех', 'карт', 'рецепт', 'состав']):
+        return {
+            'text': (
+                "Технологическая карта = продукт + позиции номенклатуры.\n"
+                "Для каждой позиции укажите норму в граммах на единицу продукта."
+            ),
+            'actions': [{'label': 'Технологические карты', 'path': '/recipe-cards'}],
+            'source': 'local',
+        }
+
+    if _contains_any(normalized, ['остатк', 'инвентар']):
+        if role != 'manager':
+            return {
+                'text': (
+                    "Раздел «Текущие остатки» доступен только manager.\n"
+                    "Для других ролей основной контроль выполняется через отчет ревизии."
+                ),
+                'actions': [{'label': 'Ревизии', 'path': '/'}],
+                'source': 'local',
+            }
+        return {
+            'text': (
+                "Откройте «Текущие остатки». Там видны актуальные остатки по позиции номенклатуры "
+                "в разрезе точек."
+            ),
+            'actions': [{'label': 'Текущие остатки', 'path': '/ingredient-inventories'}],
+            'source': 'local',
+        }
+
+    if _contains_any(normalized, ['кабинет', 'сотруд', 'пользоват', 'точк', 'профил', 'производств']):
+        if role != 'manager':
+            return {
+                'text': "Кабинет управления доступен роли manager.",
+                'actions': [{'label': 'Ревизии', 'path': '/'}],
+                'source': 'local',
+            }
+        return {
+            'text': (
+                "В кабинете manager доступно:\n"
+                "• редактирование профиля и производства,\n"
+                "• создание/редактирование/удаление точек,\n"
+                "• создание/редактирование/удаление пользователей staff/accounting."
+            ),
+            'actions': [{'label': 'Кабинет', 'path': '/cabinet'}],
+            'source': 'local',
+        }
+
+    if _contains_any(normalized, ['грамм', 'единиц', 'единиц измерения', 'в чем вводить']):
+        return {
+            'text': (
+                "Единицы ввода:\n"
+                "• В продажах — количество в штуках.\n"
+                "• В номенклатуре, поступлениях и техкартах — количество в граммах."
+            ),
+            'actions': _normalize_actions(
+                [
+                    {'label': 'Ревизии', 'path': '/'},
+                    {'label': 'Поступления', 'path': '/incoming'},
+                    {'label': 'Технологические карты', 'path': '/recipe-cards'},
+                ],
+                role,
+            ),
+            'source': 'local',
+        }
+
+    if _contains_any(normalized, ['статист', 'сводк', 'сколько', 'итог']):
+        return {
+            'text': _stats_text(user),
+            'actions': _build_default_actions(role, limit=5),
+            'source': 'local',
         }
 
     return {
         'text': (
-            "Уточните вопрос. Я могу помочь по ревизиям, поступлениям, "
-            "технологическим картам, ролям и доступным разделам."
+            "Могу помочь по ревизиям, ролям, статусам, поступлениям, техкартам, "
+            "остаткам, кабинету и сводке данных.\n"
+            "Например: «как провести ревизию», «мои права», «сводка по данным»."
         ),
-        'actions': _build_default_actions(role),
-        'source': 'fallback',
-    }
-
-
-def _call_openai_assistant(
-    *,
-    message: str,
-    history: list[dict[str, str]],
-    role: str | None,
-    pathname: str,
-    is_authenticated: bool,
-    username: str,
-) -> dict[str, Any] | None:
-    if not settings.ASSISTANT_ENABLE_LLM:
-        return None
-    if not settings.OPENAI_API_KEY:
-        return None
-
-    available_sections = _available_sections(role)
-    system_prompt = _llm_system_prompt(role, available_sections)
-
-    context_payload = {
-        'pathname': pathname,
-        'is_authenticated': is_authenticated,
-        'username': username,
-        'role': role,
-        'available_sections': [
-            {
-                'title': section['title'],
-                'path': section['path'],
-                'description': section['description'],
-            }
-            for section in available_sections
-        ],
-    }
-
-    messages = [
-        {'role': 'system', 'content': system_prompt},
-        {
-            'role': 'system',
-            'content': f"Контекст:\n{json.dumps(context_payload, ensure_ascii=False)}",
-        },
-    ]
-
-    max_history = max(0, int(settings.ASSISTANT_MAX_HISTORY))
-    for item in history[-max_history:]:
-        messages.append({'role': item['role'], 'content': item['text']})
-    messages.append({'role': 'user', 'content': message or 'Подскажи, что делать дальше.'})
-
-    endpoint = f"{settings.OPENAI_BASE_URL.rstrip('/')}/chat/completions"
-    headers = {
-        'Authorization': f'Bearer {settings.OPENAI_API_KEY}',
-        'Content-Type': 'application/json',
-    }
-    payload = {
-        'model': settings.OPENAI_MODEL,
-        'messages': messages,
-        'temperature': 0.2,
-    }
-
-    response = requests.post(
-        endpoint,
-        headers=headers,
-        json=payload,
-        timeout=25,
-    )
-    response.raise_for_status()
-    data = response.json()
-
-    content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-    if isinstance(content, list):
-        content = ''.join(
-            item.get('text', '')
-            for item in content
-            if isinstance(item, dict)
-        )
-    content = str(content or '').strip()
-    if not content:
-        return None
-
-    parsed = _extract_json_object(content)
-    if parsed is None:
-        return {
-            'text': content[:2500],
-            'actions': _build_default_actions(role),
-            'source': 'llm',
-        }
-
-    text = str(parsed.get('text', '')).strip()
-    actions = _normalize_actions(parsed.get('actions', []), role)
-    if not text:
-        text = "Не удалось сформировать ответ. Уточните вопрос."
-    if not actions:
-        actions = _build_default_actions(role)
-
-    return {
-        'text': text[:2500],
-        'actions': actions,
-        'source': 'llm',
+        'actions': _build_default_actions(role, limit=5),
+        'source': 'local',
     }
 
 
 def generate_assistant_reply(payload: dict[str, Any], user) -> dict[str, Any]:
     """Построить ответ ассистента для фронтенда."""
     payload = payload or {}
-    message = str(payload.get('message', '') or '').strip()
     history = _normalize_history(payload.get('history'))
+    message = str(payload.get('message', '') or '').strip()
+    if not message:
+        for item in reversed(history):
+            if item.get('role') == 'user':
+                message = item.get('text', '')
+                break
+
     context = payload.get('context') if isinstance(payload.get('context'), dict) else {}
     pathname = str(context.get('pathname', '/') or '/')
-
     role = _resolve_role(user)
     is_authenticated = bool(user and getattr(user, 'is_authenticated', False))
-    username = getattr(user, 'username', '') if is_authenticated else ''
-
-    try:
-        llm_reply = _call_openai_assistant(
-            message=message,
-            history=history,
-            role=role,
-            pathname=pathname,
-            is_authenticated=is_authenticated,
-            username=username,
-        )
-        if llm_reply:
-            return llm_reply
-    except Exception as exc:
-        logger.warning("LLM assistant fallback activated: %s", exc)
 
     return _fallback_reply(
         message=message,
         pathname=pathname,
         role=role,
         is_authenticated=is_authenticated,
+        user=user,
     )
