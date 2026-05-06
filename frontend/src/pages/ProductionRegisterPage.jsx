@@ -106,7 +106,7 @@ export const ProductionRegisterPage = () => {
 
           <h3 style={{ margin: `${theme.spacing.lg} 0 ${theme.spacing.md}` }}>Данные производства</h3>
           <FormGroup>
-            <Label>Название пекарни</Label>
+            <Label>Название производства</Label>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}

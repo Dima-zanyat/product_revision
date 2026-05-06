@@ -301,7 +301,7 @@ export const ManagerCabinetPage = () => {
           <CardTitle>Производство</CardTitle>
         </CardHeader>
         <CardContent>
-          <p><strong>Название пекарни:</strong> {production?.name || '-'}</p>
+          <p><strong>Название производства:</strong> {production?.name || '-'}</p>
           <p><strong>Город:</strong> {production?.city || '-'}</p>
           <p><strong>Название ИП:</strong> {production?.legal_name || '-'}</p>
           <p><strong>ИНН:</strong> {production?.inn || '-'}</p>
@@ -480,7 +480,7 @@ export const ManagerCabinetPage = () => {
         }
       >
         <FormGroup>
-          <Label>Название пекарни</Label>
+          <Label>Название производства</Label>
           <Input
             value={productionForm.name || ''}
             onChange={(e) => setProductionForm({ ...productionForm, name: e.target.value })}

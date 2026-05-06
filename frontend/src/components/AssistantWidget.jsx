@@ -163,6 +163,7 @@ const QUICK_PROMPTS = [
   'Что делать на этой странице?',
   'Какие у меня права по роли?',
   'Как провести ревизию?',
+  'Покажи подробную инструкцию',
   'Покажи сводку по данным',
 ];
 
@@ -184,7 +185,10 @@ const getWelcome = (isAuthenticated, role, pathname) => {
   const roleTitle = role ? `Роль: ${role}.` : '';
   return {
     text: `Я ассистент Product Revision. ${roleTitle}\nТекущая страница: ${currentPage}.`,
-    actions: [{ label: 'Ревизии', path: '/' }],
+    actions: [
+      { label: 'Ревизии', path: '/' },
+      { label: 'Как это работает', path: '/how-it-works' },
+    ],
   };
 };
 
@@ -197,6 +201,7 @@ const localFallback = (question, role) => {
         { label: 'Ревизии', path: '/' },
         { label: 'Поступления', path: '/incoming' },
         { label: 'Технологические карты', path: '/recipe-cards' },
+        { label: 'Как это работает', path: '/how-it-works' },
       ],
     };
   }
@@ -207,13 +212,17 @@ const localFallback = (question, role) => {
       actions: [
         { label: 'Ревизии', path: '/' },
         { label: 'Кабинет', path: '/cabinet' },
+        { label: 'Как это работает', path: '/how-it-works' },
       ],
     };
   }
 
   return {
     text: 'Сервис ассистента временно недоступен. Повторите запрос позже или перейдите в раздел Ревизии.',
-    actions: [{ label: 'Ревизии', path: '/' }],
+    actions: [
+      { label: 'Ревизии', path: '/' },
+      { label: 'Как это работает', path: '/how-it-works' },
+    ],
   };
 };
 

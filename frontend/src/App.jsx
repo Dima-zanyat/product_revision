@@ -16,6 +16,7 @@ import { RecipeCardsPage } from './pages/RecipeCardsPage';
 import { ManagerCabinetPage } from './pages/ManagerCabinetPage';
 import { ProductionRegisterPage } from './pages/ProductionRegisterPage';
 import { IngredientInventoryPage } from './pages/IngredientInventoryPage';
+import { HowItWorksPage } from './pages/HowItWorksPage';
 import { useAuthStore } from './store/authStore';
 import { authAPI } from './services/api';
 
@@ -103,6 +104,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ManagerCabinetPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/how-it-works" 
+              element={
+                <ProtectedRoute>
+                  <HowItWorksPage />
                 </ProtectedRoute>
               } 
             />
