@@ -5,10 +5,10 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/authStore';
-import { Button, ButtonGroup } from './Button';
+import { theme } from '../styles/theme';
 import { AssistantWidget } from './AssistantWidget';
+import { Button, ButtonGroup } from './Button';
 import { LoginModal } from './LoginModal';
 
 const Header = styled.header`
@@ -21,28 +21,72 @@ const Header = styled.header`
 
 const HeaderContent = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: ${theme.spacing.xl};
+  flex-wrap: wrap;
+
+  @media (max-width: 1200px) {
+    align-items: flex-start;
+  }
 `;
 
 const HeaderLeft = styled.div`
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.xs};
+  min-width: 220px;
+  flex-shrink: 0;
+  width: 100%;
+
+  @media (min-width: 900px) {
+    width: auto;
+  }
 `;
 
 const Logo = styled.h1`
   font-size: 28px;
   font-weight: 700;
-  margin-bottom: ${theme.spacing.sm};
+  margin: 0;
 `;
 
 const HeaderRight = styled.div`
   display: flex;
   align-items: center;
-  gap: ${theme.spacing.md};
+  justify-content: flex-end;
+  gap: ${theme.spacing.lg};
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+
+  @media (max-width: 1200px) {
+    width: 100%;
+    justify-content: space-between;
+  }
 `;
 
 const NavGroup = styled(ButtonGroup)`
   gap: ${theme.spacing.sm};
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+
+  @media (min-width: 900px) {
+    width: auto;
+  }
+`;
+
+const UserActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: ${theme.spacing.sm};
+  flex-shrink: 0;
+
+  @media (max-width: 1200px) {
+    margin-left: auto;
+  }
 `;
 
 const UserInfo = styled.div`
@@ -50,9 +94,16 @@ const UserInfo = styled.div`
   align-items: center;
   gap: ${theme.spacing.sm};
   font-size: 14px;
+  white-space: nowrap;
 `;
 
-const Container = styled.div`
+const HeaderContainer = styled.div`
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: ${theme.spacing.lg};
+`;
+
+const MainContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: ${theme.spacing.lg};
@@ -62,10 +113,25 @@ const Main = styled.main`
   margin-top: ${theme.spacing.xl};
 `;
 
+const HeaderButton = styled(Button)`
+  white-space: nowrap;
+`;
+
+const SecondaryHeaderButton = styled(Button)`
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.28);
+  }
+`;
+
 const LogoutButton = styled(Button)`
+  white-space: nowrap;
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.3);
   }
@@ -83,6 +149,7 @@ export const Layout = ({ children }) => {
 
   const isIncoming = location.pathname.startsWith('/incoming');
   const isIngredientInventories = location.pathname.startsWith('/ingredient-inventories');
+  const isNomenclature = location.pathname.startsWith('/nomenclature');
   const isRecipeCards = location.pathname.startsWith('/recipe-cards');
   const isCabinet = location.pathname.startsWith('/cabinet');
   const isRevisions = location.pathname === '/' || location.pathname.startsWith('/revisions');
@@ -91,82 +158,87 @@ export const Layout = ({ children }) => {
   return (
     <>
       <Header>
-        <Container>
+        <HeaderContainer>
           <HeaderContent>
             <HeaderLeft>
-              <Logo>📊 Product Revision</Logo>
+              <Logo>Product Revision</Logo>
               <p>Система контроля остатков ингредиентов</p>
             </HeaderLeft>
             <HeaderRight>
               <NavGroup>
-                <Button
+                <HeaderButton
                   variant={isRevisions ? 'primary' : 'default'}
                   onClick={() => navigate('/')}
                 >
                   Ревизии
-                </Button>
-                <Button
+                </HeaderButton>
+                <HeaderButton
                   variant={isIncoming ? 'primary' : 'default'}
                   onClick={() => navigate('/incoming')}
                 >
                   Поступления
-                </Button>
+                </HeaderButton>
                 {user?.role === 'manager' && (
-                  <Button
+                  <HeaderButton
                     variant={isIngredientInventories ? 'primary' : 'default'}
                     onClick={() => navigate('/ingredient-inventories')}
                   >
                     Текущие остатки
-                  </Button>
+                  </HeaderButton>
                 )}
-                <Button
+                <HeaderButton
+                  variant={isNomenclature ? 'primary' : 'default'}
+                  onClick={() => navigate('/nomenclature')}
+                >
+                  Номенклатура
+                </HeaderButton>
+                <HeaderButton
                   variant={isRecipeCards ? 'primary' : 'default'}
                   onClick={() => navigate('/recipe-cards')}
                 >
                   Технологические карты
-                </Button>
-                <Button
+                </HeaderButton>
+                <HeaderButton
                   variant={isHowItWorks ? 'primary' : 'default'}
                   onClick={() => navigate('/how-it-works')}
                 >
                   Как это работает
-                </Button>
-                {user?.role === 'manager' && (
-                  <Button
-                    variant={isCabinet ? 'primary' : 'default'}
-                    onClick={() => navigate('/cabinet')}
-                  >
-                    Кабинет
-                  </Button>
-                )}
+                </HeaderButton>
               </NavGroup>
               {isAuthenticated && user ? (
-                <>
+                <UserActions>
+                  {user?.role === 'manager' && (
+                    <SecondaryHeaderButton
+                      variant={isCabinet ? 'primary' : 'default'}
+                      onClick={() => navigate('/cabinet')}
+                    >
+                      Кабинет
+                    </SecondaryHeaderButton>
+                  )}
                   <UserInfo>
-                    <span>👤 {user.username}</span>
+                    <span>{user.username}</span>
                   </UserInfo>
                   <LogoutButton onClick={handleLogout}>
                     Выйти
                   </LogoutButton>
-                </>
+                </UserActions>
               ) : (
-                <Button onClick={() => setShowLoginModal(true)}>
+                <HeaderButton onClick={() => setShowLoginModal(true)}>
                   Войти
-                </Button>
+                </HeaderButton>
               )}
             </HeaderRight>
           </HeaderContent>
-        </Container>
+        </HeaderContainer>
       </Header>
       <Main>
-        <Container>{children}</Container>
+        <MainContainer>{children}</MainContainer>
       </Main>
       <AssistantWidget />
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
       />
     </>
   );
 };
-

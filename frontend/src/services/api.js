@@ -116,6 +116,8 @@ export const productsAPI = {
 // Ingredients API
 export const ingredientsAPI = {
   create: (data) => api.post('/ingredients/', data),
+  update: (id, data) => api.put(`/ingredients/${id}/`, data),
+  delete: (id) => api.delete(`/ingredients/${id}/`),
 };
 
 // Users API

@@ -9,21 +9,36 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
     build: .
     container_name: product_revision_backend
-    command: python manage.py runserver 0.0.0.0:8000
+    restart: unless-stopped
     volumes:
-      - .:/app
+      - ./core:/app/core
+      - ./products:/app/products
+      - ./revisions:/app/revisions
+      - ./sales:/app/sales
+      - ./users:/app/users
+      - ./manage.py:/app/manage.py
+      - ./requirements.txt:/app/requirements.txt
+      - ./start.sh:/app/start.sh
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/public:/app/frontend/public
     ports:
       - "8000:8000"
     env_file:
       - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

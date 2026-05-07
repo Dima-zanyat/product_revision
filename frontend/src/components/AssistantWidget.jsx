@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { theme } from '../styles/theme';
 import { assistantAPI } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { theme } from '../styles/theme';
 
 const FloatingButton = styled.button`
   position: fixed;
@@ -178,9 +178,10 @@ const getWelcome = (isAuthenticated, role, pathname) => {
   const currentPage =
     pathname.startsWith('/incoming') ? 'Поступления'
       : pathname.startsWith('/recipe-cards') ? 'Технологические карты'
-        : pathname.startsWith('/ingredient-inventories') ? 'Текущие остатки'
-          : pathname.startsWith('/cabinet') ? 'Кабинет'
-            : 'Ревизии';
+        : pathname.startsWith('/nomenclature') ? 'Номенклатура'
+          : pathname.startsWith('/ingredient-inventories') ? 'Текущие остатки'
+            : pathname.startsWith('/cabinet') ? 'Кабинет'
+              : 'Ревизии';
 
   const roleTitle = role ? `Роль: ${role}.` : '';
   return {

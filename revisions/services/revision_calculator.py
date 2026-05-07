@@ -312,10 +312,10 @@ class RevisionCalculator:
                         recipe_qty = recipe.quantity
                         if not isinstance(recipe_qty, Decimal):
                             recipe_qty = Decimal(str(recipe_qty))
-                        
+
                         # Преобразовать sold_quantity в Decimal
                         sold_decimal = Decimal(str(sold_quantity))
-                        
+
                         # Расход = количество ингредиента в рецепте × количество проданного продукта
                         expense = recipe_qty * sold_decimal
                         total_expense += expense
@@ -333,7 +333,7 @@ class RevisionCalculator:
         except (InvalidOperation, ValueError, TypeError) as e:
             logger.error(f"Ошибка при округлении расхода: {e}")
             total_expense = Decimal('0.000')
-        
+
         return total_expense
 
     def _calculate_ingredient_report(self, ingredient: Ingredient, sales_data: dict, previous_revision: Revision):
@@ -374,7 +374,7 @@ class RevisionCalculator:
             # Округлить до 3 знаков после запятой (соответствует decimal_places=3 в модели)
             # Используем ROUND_HALF_UP для стандартного округления
             expected_quantity = expected_quantity.quantize(
-                Decimal('0.001'), 
+                Decimal('0.001'),
                 rounding=ROUND_HALF_UP
             )
             # Проверить, что значение в пределах max_digits=10

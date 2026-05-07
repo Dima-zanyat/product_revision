@@ -3,22 +3,23 @@
  */
 
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
-import { globalStyles, theme } from './styles/theme';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { RevisionListPage } from './pages/RevisionListPage';
-import { RevisionDetailPage } from './pages/RevisionDetailPage';
-import { RevisionCreatePage } from './pages/RevisionCreatePage';
-import { IncomingListPage } from './pages/IncomingListPage';
-import { RecipeCardsPage } from './pages/RecipeCardsPage';
-import { ManagerCabinetPage } from './pages/ManagerCabinetPage';
-import { ProductionRegisterPage } from './pages/ProductionRegisterPage';
-import { IngredientInventoryPage } from './pages/IngredientInventoryPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
-import { useAuthStore } from './store/authStore';
+import { IncomingListPage } from './pages/IncomingListPage';
+import { IngredientInventoryPage } from './pages/IngredientInventoryPage';
+import { ManagerCabinetPage } from './pages/ManagerCabinetPage';
+import { NomenclaturePage } from './pages/NomenclaturePage';
+import { ProductionRegisterPage } from './pages/ProductionRegisterPage';
+import { RecipeCardsPage } from './pages/RecipeCardsPage';
+import { RevisionCreatePage } from './pages/RevisionCreatePage';
+import { RevisionDetailPage } from './pages/RevisionDetailPage';
+import { RevisionListPage } from './pages/RevisionListPage';
 import { authAPI } from './services/api';
+import { useAuthStore } from './store/authStore';
+import { globalStyles } from './styles/theme';
 
 const GlobalStyle = createGlobalStyle`
   ${globalStyles}
@@ -47,41 +48,41 @@ function App() {
       <Router>
         <Layout>
           <Routes>
-            <Route 
-              path="/" 
+            <Route
+              path="/"
               element={
                 <ProtectedRoute>
                   <RevisionListPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/revisions/:id" 
+            <Route
+              path="/revisions/:id"
               element={
                 <ProtectedRoute>
                   <RevisionDetailPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/revisions/new" 
+            <Route
+              path="/revisions/new"
               element={
                 <ProtectedRoute>
                   <RevisionCreatePage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/register/:token" 
-              element={<ProductionRegisterPage />} 
+            <Route
+              path="/register/:token"
+              element={<ProductionRegisterPage />}
             />
-            <Route 
-              path="/incoming" 
+            <Route
+              path="/incoming"
               element={
                 <ProtectedRoute>
                   <IncomingListPage />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route
               path="/ingredient-inventories"
@@ -91,29 +92,37 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route 
-              path="/recipe-cards" 
+            <Route
+              path="/recipe-cards"
               element={
                 <ProtectedRoute>
                   <RecipeCardsPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/cabinet" 
+            <Route
+              path="/nomenclature"
+              element={
+                <ProtectedRoute>
+                  <NomenclaturePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cabinet"
               element={
                 <ProtectedRoute>
                   <ManagerCabinetPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/how-it-works" 
+            <Route
+              path="/how-it-works"
               element={
                 <ProtectedRoute>
                   <HowItWorksPage />
                 </ProtectedRoute>
-              } 
+              }
             />
           </Routes>
         </Layout>
