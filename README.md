@@ -121,7 +121,7 @@ docker compose exec backend python manage.py createsuperuser
 ## 📸 Скриншоты
 
 ### Демонстарция интерфейса и функционала приложения
-  [gif](/screenshots/Реализация%20функционала.gif)
+![Демонстрация функционала](screenshots/demo.gif)
 
 ## 🚀 Запуск проекта
 
