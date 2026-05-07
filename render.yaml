@@ -14,4 +14,3 @@ services:
       - key: WEB_CONCURRENCY
         value: 2
       # Set DATABASE_URL in the Render dashboard (PostgreSQL)
-
